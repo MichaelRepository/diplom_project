@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- License Agreement at http://iconmonstr.com/license/ -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="512px"
+   height="512px"
+   viewBox="0 0 512 512"
+   enable-background="new 0 0 512 512"
+   xml:space="preserve"
+   id="svg2"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="iconmonstr-light-bulb-10-icon.svg"><metadata
+   id="metadata9"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+   id="defs7" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="640"
+   inkscape:window-height="480"
+   id="namedview5"
+   showgrid="false"
+   inkscape:zoom="0.4609375"
+   inkscape:cx="256"
+   inkscape:cy="256"
+   inkscape:window-x="117"
+   inkscape:window-y="97"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="svg2" />
+<path
+   id="light-bulb-10-icon"
+   d="M299.823,364.41h-87.646c-6.144,0-11.124,4.98-11.124,11.123s4.98,11.122,11.124,11.122h87.647  c6.143,0,11.123-4.979,11.123-11.122S305.967,364.41,299.823,364.41z M297.822,401.443h-83.645c-6.143,0-11.123,4.98-11.123,11.123  s4.98,11.123,11.123,11.123h83.646c6.142,0,11.122-4.98,11.122-11.123S303.965,401.443,297.822,401.443z M214.75,437.961  C236.406,457.979,238.636,462,247.28,462h16.65c8.45,0,10.532-3.727,33.319-24.039H214.75z M382.621,171.454  c0,75.31-64.767,117.514-64.767,176.943h-29.493c0.025-73.246,64.232-111.827,64.232-176.943c0-121.891-193.188-122.081-193.188,0  c0,65.057,63.094,101.976,64.558,176.943h-29.818c0-59.43-64.767-101.634-64.767-176.943  C129.379,9.598,382.621,9.433,382.621,171.454z M242.851,167.478c0,11.977-9.709,21.686-21.688,21.686  c-11.977,0-21.686-9.709-21.686-21.686c0-11.979,9.709-21.688,21.686-21.688C233.142,145.79,242.851,155.499,242.851,167.478z   M313.913,167.478c0,11.977-9.709,21.686-21.688,21.686c-11.977,0-21.686-9.709-21.686-21.686c0-11.979,9.709-21.688,21.686-21.688  C304.204,145.79,313.913,155.499,313.913,167.478z M310.38,212.907c-18.293,46.624-87.399,47.76-106.372-1.274  C228.517,230.839,284.747,231.506,310.38,212.907z"
+   style="fill:#000000" />
+</svg>

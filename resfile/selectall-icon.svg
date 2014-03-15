@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- The icon can be used freely in both personal and commercial projects with no attribution required, but always appreciated. 
+You may NOT sub-license, resell, rent, redistribute or otherwise transfer the icon without express written permission from iconmonstr.com -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="512px"
+   height="512px"
+   viewBox="0 0 512 512"
+   enable-background="new 0 0 512 512"
+   xml:space="preserve"
+   id="svg2"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="selectall-icon.svg"><metadata
+   id="metadata9"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata><defs
+   id="defs7" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="667"
+   inkscape:window-height="643"
+   id="namedview5"
+   showgrid="false"
+   inkscape:zoom="0.4609375"
+   inkscape:cx="256"
+   inkscape:cy="256"
+   inkscape:window-x="0"
+   inkscape:window-y="30"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="svg2" />
+
+<path
+   id="list-view-icon"
+   d="M 406.30508,108.857 H 16 V 50 h 390.30508 v 58.857 z m 0,58.857 H 16 v 58.857 h 390.30508 v -58.857 z m 0,117.715 H 16 v 58.857 h 390.30508 v -58.857 z m 0,117.714 H 16 V 462 h 390.30508 v -58.857 z"
+   inkscape:connector-curvature="0" />
+
+<polygon
+   transform="matrix(0.1838078,0,0,0.22145045,414.64012,16.156139)"
+   id="check-mark-icon"
+   points="462,156.726 398.218,92.985 199.729,291.475 113.754,205.476 50,269.242 199.733,419.015 " /><polygon
+   transform="matrix(0.1838078,0,0,0.22145045,413.89435,131.78326)"
+   id="check-mark-icon-1"
+   points="50,269.242 199.733,419.015 462,156.726 398.218,92.985 199.729,291.475 113.754,205.476 " /><polygon
+   transform="matrix(0.1838078,0,0,0.22145045,413.38588,252.39343)"
+   id="check-mark-icon-7"
+   points="398.218,92.985 199.729,291.475 113.754,205.476 50,269.242 199.733,419.015 462,156.726 " /><polygon
+   transform="matrix(0.1838078,0,0,0.22145045,414.06384,365.85106)"
+   id="check-mark-icon-4"
+   points="199.729,291.475 113.754,205.476 50,269.242 199.733,419.015 462,156.726 398.218,92.985 " /></svg>

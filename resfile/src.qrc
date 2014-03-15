@@ -1,0 +1,46 @@
+<RCC>
+    <qresource prefix="/">
+        <file>SplashScreen.jpg</file>
+    </qresource>
+    <qresource prefix="/svg">
+        <file>Awesome.svg</file>
+        <file>business-card.svg</file>
+        <file>checkmark-icon.svg</file>
+        <file>direction-icon.svg</file>
+        <file>edit-icon.svg</file>
+        <file>filter-icon.svg</file>
+        <file>first-icon.svg</file>
+        <file>group-icon.svg</file>
+        <file>iconmonstr-database-7-icon.svg</file>
+        <file>iconmonstr-light-bulb-10-icon.svg</file>
+        <file>iconmonstr-speech-bubble-11-icon.svg</file>
+        <file>last-icon.svg</file>
+        <file>logout-icon.svg</file>
+        <file>master_filter-icon.svg</file>
+        <file>minus-icon.svg</file>
+        <file>next-icon.svg</file>
+        <file>plus-icon.svg</file>
+        <file>prev-icon.svg</file>
+        <file>refresh-icon.svg</file>
+        <file>search-icon.svg</file>
+        <file>selectall-icon.svg</file>
+        <file>selected_filter-icon.svg</file>
+        <file>sortdown-icon.svg</file>
+        <file>sortup-icon.svg</file>
+        <file>table-icon.svg</file>
+        <file>unselected_filter-icon.svg</file>
+        <file>user.svg</file>
+        <file>user_to_group-icon.svg</file>
+        <file>user_to_state-icon.svg</file>
+        <file>user1-icon.svg</file>
+        <file>gear-icon.svg</file>
+        <file>menu-icon.svg</file>
+        <file>eye-icon.svg</file>
+    </qresource>
+    <qresource prefix="/style">
+        <file>WowStyle.qss</file>
+    </qresource>
+    <qresource prefix="/png">
+        <file>search-icon.png</file>
+    </qresource>
+</RCC>
