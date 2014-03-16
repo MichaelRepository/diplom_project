@@ -44,3 +44,5 @@ FORMS    += mainwindow.ui \
     subtabledialog.ui
 
 RESOURCES += ../../resfile/src.qrc
+
+RC_FILE = ../../resfile/for_win_ico.rc

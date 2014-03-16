@@ -77,8 +77,8 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->tableView->addAction(Table_record_remove);
     ui->tableView->setContextMenuPolicy(Qt::ActionsContextMenu);                /// установка типа меню - отображать список действий
 
-   /// создание загрузчика параметров приложения
-   setting = new QSettings("../myapp.ini",QSettings::IniFormat,this);
+    /// создание загрузчика параметров приложения
+    setting = new QSettings("../myapp.ini",QSettings::IniFormat,this);
 }
 
 MainWindow::~MainWindow()
@@ -438,6 +438,7 @@ void MainWindow::remove_records()                                               
 
 void MainWindow::edit_records()                                                 /// изменить записи
 {
+    /// определить выбранную для редактирования запись
     QModelIndexList rowslist = ui->tableView->selectionModel()->selectedRows(0);/// получить список всех строк в которых выделен 0-й столбец
     if(rowslist.size() != 1) return ;                                           /// список содержит не одну строку -> завершить
     int row = rowslist[0].row();                                                /// получить номер выделенной строки
@@ -445,33 +446,62 @@ void MainWindow::edit_records()                                                 
     for (;row != 0; row--){                                                     /// спозиционироваться на нужной записи
         query->next();
     }
-    EditRecordModel* recordmodel = new EditRecordModel();                       /// модель данных из записи таблицы
-    QList<QString> list;
+
+    EditRecordModel recordmodel;                                                /// модель данных для записи таблицы
+    QList<QString> reglist;                                                     /// список регулярных выражений для валиадторов
+    QMap<QString, SubTableDialog *> tableattributelist;                         /// список спецатрибутов, являющихся субтаблицами. список(атрибут, визуализатор субтаблицы)
 
     switch(currenttable){
     case SPECIALITY:
         /// подготовка модели данных записи (атрибут, значение)
-        recordmodel->modelAddRow("Шифр",            query->value("idspeciality"));
-        recordmodel->modelAddRow("Аббревиатура",    query->value("abbreviation"));
-        recordmodel->modelAddRow("Наименование",    query->value("name"));
-        recordmodel->modelAddRow("Период обучения", query->value("periodeducation"));
-        recordmodel->modelAddRow("Базируется на",   query->value("basedon"));
-        recordmodel->modelAddRow("Специализация",   query->value("specialization"));
-        /// полготовка списка регулярных выражений для валидатора
-        list.append("\\d{4}");
-        list.append("\\d{4}");
-        list.append("\\d{4}");
-        list.append("\\d{4}");
-        list.append("\\d{4}");
-        list.append("\\d{4}");
+        recordmodel.modelAddRow("Шифр",            query->value("idspeciality"));
+        recordmodel.modelAddRow("Аббревиатура",    query->value("abbreviation"));
+        recordmodel.modelAddRow("Наименование",    query->value("name"));
+        recordmodel.modelAddRow("Период обучения", query->value("periodeducation"));
+        recordmodel.modelAddRow("Базируется на",   query->value("basedon"));
+        recordmodel.modelAddRow("Специализация",   query->value("specialization"));
+        /// подготовка списка регулярных выражений для валидатора
+        reglist.append("\\d{1,6}");
+        reglist.append("[\\w\\s]{1,50}");
+        reglist.append("[\\w\\s]{1,50}");
+        reglist.append("\\d{1,3}");
+        reglist.append("[\\w\\s]{1,100}");
+        reglist.append("[\\w\\s]{1,100}");
+        break;
+    case GROUP:{
+        /// подготовка модели данных записи (атрибут, значение)
+        /// получение списка всех существующих специальностей  в виде подтаблицы
+        SubTableDialog subtableviewer(connectionname);                          /// создается виджет для отображения субтаблицы
+        /// передача текста запроса
+        //subtableviewer->ExecSqlQuery("SELECT idspeciality, abbreviation FROM speciality ORDER BY idspeciality");
 
+        tableattributelist.insert("Специальность",&subtableviewer);
+
+        recordmodel.modelAddRow("Специальность",   QVariant(""));
+        recordmodel.modelAddRow("Наименование",    query->value("name"));
+        recordmodel.modelAddRow("Год создания",    query->value("yearformation"));
+        recordmodel.modelAddRow("Форма обучения",  query->value("form"));
+        recordmodel.modelAddRow("Бюджет",          query->value("budget"));
+        recordmodel.modelAddRow("Курс",            query->value("course"));
+        /// подготовка списка регулярных выражений для валидатора
+        reglist.append("\\d{0,6}");
+        reglist.append("[\\w\\s]{0,50}");
+        reglist.append("[\\w\\s]{0,50}");
+        reglist.append("\\d{0,3}");
+        reglist.append("[\\w\\s]{0,100}");
+        reglist.append("[\\w\\s]{0,100}");
         break;
     }
-    dlgrecordedit.setModel(recordmodel,&list);
-
+    }
+    dlgrecordedit.setModel(&recordmodel,&reglist,&tableattributelist);
 
     dlgrecordedit.exec();
     query->first();
+
+    /** удаление временных данных
+    recordmodel.deleteLater();
+    reglist.clear();
+    tableattributelist.clear(); **/
 }
 
 void MainWindow::on_Edit_button1_clicked()

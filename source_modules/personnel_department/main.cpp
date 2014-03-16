@@ -6,8 +6,8 @@
 
 int main(int argc, char *argv[])
 {
-    QLibrary qsqlmysql("../../../file/box_library_5.2.1/sqldrivers/qsqlmysql.dll");
-    QLibrary libmysql ("../../../file/box_library_5.2.1/libmysql.dll");
+    QLibrary qsqlmysql("../../../files/box_library_5.2.1/sqldrivers/qsqlmysql.dll");
+    QLibrary libmysql ("../../../files/box_library_5.2.1/libmysql.dll");
     if (!qsqlmysql.load()) qDebug() << qsqlmysql.errorString();
     if (!libmysql.load())  qDebug() << libmysql.errorString();
 

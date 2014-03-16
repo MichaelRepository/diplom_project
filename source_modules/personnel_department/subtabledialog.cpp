@@ -185,6 +185,11 @@ void SubTableDialog::ExecSqlQuery(SubTable table, int keyvalue)
     this->exec();
 }
 
+void SubTableDialog::ExecSqlQuery(QString sqlstring, QString namekey)
+{
+
+}
+
 void SubTableDialog::mousePressEvent(QMouseEvent *event)
 {
     mpos = event->pos();

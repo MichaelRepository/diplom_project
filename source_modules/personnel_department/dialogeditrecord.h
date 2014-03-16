@@ -6,6 +6,7 @@
 
 #include "editrecordmodel.h"
 #include "recorddelegate.h"
+#include "subtabledialog.h"
 
 namespace Ui {
 class DialogEditRecord;
@@ -19,7 +20,10 @@ public:
     explicit DialogEditRecord(QWidget *parent = 0);
     ~DialogEditRecord();
 
-    void setModel(EditRecordModel* model, QList<QString>* regexplist);                                      /// установить модель данных
+
+    void setModel(EditRecordModel* model,                                       /// установить модель данных
+                  QList<QString>* regexplist = 0,                               /// передать список рег выражений валидаторам
+                  QMap<QString, SubTableDialog*>* tableattributelist  = 0);     /// передать список атрибутов, являющихся субтаблицами
 
 private:
     Ui::DialogEditRecord *ui;

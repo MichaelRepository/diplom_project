@@ -22,12 +22,17 @@ DialogEditRecord::~DialogEditRecord()
     delete ui;
 }
 
-void DialogEditRecord::setModel(EditRecordModel *model, QList<QString> *regexplist)
+void DialogEditRecord::setModel(EditRecordModel *model, QList<QString> *regexplist,
+                                QMap<QString, SubTableDialog *> *tableattributelist)
 {
+    /// приявязка вьювера к модели
     recordmodel = model;
     ui->treeView->setModel(recordmodel);
     ui->treeView->resizeColumnToContents(0);
-    RecordDelegate* delegate = new RecordDelegate();
-    delegate->setRegStrList(regexplist);
+    /// создание и привязка делегата
+    RecordDelegate* delegate = new RecordDelegate(this);
+    delegate->setRegStrList(regexplist);                                        /// передача списка рег выражнией делегату
+    delegate->setTableAttributeList(tableattributelist);                        /// передать список атрибутов, являющихся субтаблицами
+
     ui->treeView->setItemDelegate(delegate);
 }

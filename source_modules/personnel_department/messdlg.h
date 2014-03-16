@@ -20,7 +20,7 @@ public:
                  QString info);
     void settitl(QString titl);// установить заголовок
     void settext(QString text);// установить текс
-    void setinfo(QString info);// установить информаци
+    void setinfo(QString info);// установить информацию
     
 private slots:
     void on_OkButton_clicked();

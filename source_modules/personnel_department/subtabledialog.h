@@ -26,7 +26,8 @@ public:
     ~SubTableDialog();
 
     void setTitleText(QString text);                                            /// установить заголовок
-    void ExecSqlQuery(SubTable table, int keyvalue);                            /// установить текст запроса
+    void ExecSqlQuery(SubTable table,    int keyvalue);                         /// установить параметры (подтаблица,   значение ключа)     запроса (отобразить зависимую таблицу)
+    void ExecSqlQuery(QString  sqlstring, QString namekey = "");                /// установить параметры (текст запрос, имя ключевого поля) запроса (отобразить результат запроса)
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
@@ -43,7 +44,6 @@ private:
     QSqlQuery*              query;                                              /// текущий запрос
 
     SubTable                subtable;                                           /// текущая подтаблица
-
 };
 
 #endif // SUBTABLEDIALOG_H

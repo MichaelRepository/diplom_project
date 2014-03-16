@@ -89,7 +89,7 @@ border:1 solid #2C3033;
          <string>Изменить</string>
         </property>
         <property name="icon">
-         <iconset resource="src/src.qrc">
+         <iconset resource="../../resfile/src.qrc">
           <normaloff>:/svg/edit-icon.svg</normaloff>:/svg/edit-icon.svg</iconset>
         </property>
         <property name="iconSize">
@@ -139,7 +139,7 @@ border:1 solid #2C3033;
          <string>Добавить</string>
         </property>
         <property name="icon">
-         <iconset resource="src/src.qrc">
+         <iconset resource="../../resfile/src.qrc">
           <normaloff>:/svg/plus-icon.svg</normaloff>:/svg/plus-icon.svg</iconset>
         </property>
         <property name="iconSize">
@@ -189,7 +189,7 @@ border:1 solid #2C3033;
          <string>Удалить</string>
         </property>
         <property name="icon">
-         <iconset resource="src/src.qrc">
+         <iconset resource="../../resfile/src.qrc">
           <normaloff>:/svg/minus-icon.svg</normaloff>:/svg/minus-icon.svg</iconset>
         </property>
         <property name="iconSize">
@@ -278,7 +278,7 @@ border-right:25x solid #2C3033;</string>
   </layout>
  </widget>
  <resources>
-  <include location="src/src.qrc"/>
+  <include location="../../resfile/src.qrc"/>
  </resources>
  <connections/>
 </ui>

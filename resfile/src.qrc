@@ -1,6 +1,7 @@
 <RCC>
     <qresource prefix="/">
         <file>SplashScreen.jpg</file>
+        <file>cat.ico</file>
     </qresource>
     <qresource prefix="/svg">
         <file>Awesome.svg</file>

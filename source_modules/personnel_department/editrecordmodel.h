@@ -37,7 +37,7 @@ public:
     QVariant getValue(int row);                                                 /// метод для получения значения по номеру атрибута
 
 private:
-    QList< QPair<QString, QVariant> > listmodel;
+    QList< QPair<QString, QVariant> > listmodel;                                /// реальное хранилище данных
 };
 
 #endif // EDITRECORDMODEL_H

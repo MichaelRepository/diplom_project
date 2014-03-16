@@ -13,28 +13,78 @@
 
 #include <QDebug>
 
-#include <QStyledItemDelegate>
 #include <QPainter>
+
+#include <QStyledItemDelegate>
+#include <QLabel>
 #include <QDateEdit>
 #include <QLineEdit>
+#include <QSpinBox>
+#include <QComboBox>
 #include <QRegExpValidator>
+#include <QVector>
+#include <QMap>
+
+#include <QApplication>
+
+#include "messdlg.h"
+#include "subtabledialog.h"
+
+#include <QToolButton>
+#include <QTableView>
+/**
+    кнопка, при нажатии которой отобразится субтаблица
+**/
+class DelegatButton : public QToolButton
+{
+    Q_OBJECT
+public:
+    DelegatButton(QWidget *parent):QToolButton(parent){
+        QObject::connect(this,&DelegatButton::clicked,
+                         this,&DelegatButton::click);
+    }
+
+    void setSubTableDialog(SubTableDialog *dlg){
+        subtabledlg = dlg;
+        subtabledlg->setWindowFlags(Qt::Popup);
+        QPoint newpos(this->rect().x(),this->rect().y()+this->rect().height());
+        subtabledlg->resize(this->rect().width(),100);
+        subtabledlg->move(QWidget::mapToGlobal(newpos));
+    }
+
+public slots:
+    void click(){
+        subtabledlg->show();
+    }
+
+private:
+    SubTableDialog *subtabledlg;
+};
+
+
 
 class RecordDelegate : public QStyledItemDelegate
 {
 public:
-    RecordDelegate();
+    RecordDelegate(QObject * parent = 0);
     ~ RecordDelegate();
 
-    void setRegStrList(QList<QString> *list);                                   /// установить список рег. выражений для каждого валидатора данных
+    void setRegStrList        (QList<QString> *list);                           /// установить список рег. выражений для каждого валидатора данных
+    void setTableAttributeList(QMap<QString, SubTableDialog *> *list);          /// установить список атрибутов, являющихся субтаблицами
 
     QWidget *createEditor(QWidget * parent, const QStyleOptionViewItem & option,/// метод создает редактор для каждого элемента модели
                           const QModelIndex & index) const;
     void	 setEditorData(QWidget * editor, const QModelIndex & index) const;  /// передает в редактор данные из модели
     void	 setModelData(QWidget * editor, QAbstractItemModel * model,         /// пердает данные из редактора в модель
                           const QModelIndex & index) const;
-    // void	paint(QPainter * painter, const QStyleOptionViewItem & option, const QModelIndex & index) const;
+    /*void     updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
+                                  const QModelIndex &) const;*/
+
+    void	paint(QPainter * painter, const QStyleOptionViewItem & option,
+                  const QModelIndex & index) const;
 private:
     QList<QString> *regexplist;                                                 /// список регулярных выражений для валидаторов
+    QMap<QString, SubTableDialog *> *tableattributelist;                        /// список атрибутов, являющихся субтаблицами
 };
 
 #endif // RECORDDELEGATE_H
