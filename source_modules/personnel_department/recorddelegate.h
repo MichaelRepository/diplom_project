@@ -47,14 +47,15 @@ public:
     void setSubTableDialog(SubTableDialog *dlg){
         subtabledlg = dlg;
         subtabledlg->setWindowFlags(Qt::Popup);
-        QPoint newpos(this->rect().x(),this->rect().y()+this->rect().height());
-        subtabledlg->resize(this->rect().width(),100);
-        subtabledlg->move(QWidget::mapToGlobal(newpos));
     }
 
 public slots:
     void click(){
-        subtabledlg->show();
+        QPoint newpos( this->rect().x(), this->rect().y()+this->height() );
+        subtabledlg->resize(this->rect().width(), 200);
+        subtabledlg->move(this->mapToGlobal(newpos) );
+
+        subtabledlg->exec();
     }
 
 private:

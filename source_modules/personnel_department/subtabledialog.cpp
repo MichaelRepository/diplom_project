@@ -6,8 +6,7 @@ SubTableDialog::SubTableDialog(QString connectname, QWidget *parent) :
     ui(new Ui::SubTableDialog)
 {
     ui->setupUi(this);
-    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint |
-                   Qt::WindowStaysOnTopHint);
+    setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint | Qt::WindowStaysOnTopHint);
 
     statusbar = new QStatusBar(this);
 
@@ -15,7 +14,7 @@ SubTableDialog::SubTableDialog(QString connectname, QWidget *parent) :
     //layoutWidget ->addWidget(new QTextEdit);
     layoutWidget->setContentsMargins(1,1,1,1);
     layoutWidget->setSpacing(0);
-    layoutWidget ->addWidget(statusbar);
+    layoutWidget->addWidget(statusbar);
 
     dbmess = new dbMessDlg(this);
 
@@ -32,6 +31,9 @@ SubTableDialog::SubTableDialog(QString connectname, QWidget *parent) :
     model  = new QSqlQueryModel(this);
     ui->tableView->setHorizontalHeader(header);
     ui->tableView->setModel(model);
+
+    movable = true;                                                             /// разрешить перемещение окна
+    currentrow = 0;                                                             /// текущая строка
 }
 
 SubTableDialog::~SubTableDialog()
@@ -181,22 +183,55 @@ void SubTableDialog::ExecSqlQuery(SubTable table, int keyvalue)
     ui->tableView->resizeRowsToContents();
 
     subtable = table;                                                           /// запомнить текущую таблицу
-
-    this->exec();
+    currentrow = 0;
 }
 
-void SubTableDialog::ExecSqlQuery(QString sqlstring, QString namekey)
+void SubTableDialog::ExecSqlQuery(QString sqlstring)
 {
+    query->finish();
+    query->prepare(sqlstring);
+    if(!query->exec()){                                                         /// выполнение запроса
+        dbmess->showdbmess(query->lastError());
+        return ;
+    }
+    model->setQuery(*query);
+    /// установка заголовков таблицы
+    for(int i = 0; i < headernamelist.size(); ++i)
+    ui->tableView->model()->setHeaderData(i,    Qt::Horizontal, headernamelist.at(i) );
 
+    currentrow = 0;
+}
+
+void SubTableDialog::setHeadersNameList(QStringList &namelist)
+{
+    headernamelist = namelist;
+}
+
+void SubTableDialog::setDisplayMode(bool titleVisible,
+                                    bool editbuttonpanelVisible,
+                                    bool dlgMovable)
+{
+    movable = dlgMovable;
+    ui->label->setVisible(titleVisible);
+    ui->toolsframe->setVisible(editbuttonpanelVisible);
+}
+
+QVariant SubTableDialog::getCurRecordAttributeValue(QString attribute)
+{
+    if(!query->isValid() || !query->seek(currentrow)) return QVariant();
+    return query->value(attribute);
 }
 
 void SubTableDialog::mousePressEvent(QMouseEvent *event)
 {
-    mpos = event->pos();
     QDialog::mousePressEvent(event);
+    if(!movable) return;
+    mpos = event->pos();    
 }
 void SubTableDialog::mouseMoveEvent(QMouseEvent *event)
 {
+        QDialog::mouseMoveEvent(event);
+        if(!movable) return;
         if (mpos.x() >= 0 && event->buttons() && Qt::LeftButton)
         {
             QPoint diff = event->pos() - mpos;
@@ -204,11 +239,28 @@ void SubTableDialog::mouseMoveEvent(QMouseEvent *event)
 
             this->move(newpos);
         }
-        QDialog::mouseMoveEvent(event);
+
 }
 void SubTableDialog::mouseReleaseEvent(QMouseEvent *event)
 {
+        QDialog::mouseMoveEvent(event);
+        if(!movable) return;
         /// очистить старое значение позиции нажатия мыши
         mpos = QPoint(-1, -1);
         QDialog::mouseReleaseEvent(event);
+}
+
+void SubTableDialog::showEvent(QShowEvent *event)
+{
+    QDialog::showEvent(event);
+    ui->tableView->selectionModel()->select(ui->tableView->model()->index(currentrow,0),
+                                            QItemSelectionModel::ClearAndSelect |
+                                            QItemSelectionModel::Rows);
+    ui->tableView->setFocus();
+}
+
+void SubTableDialog::on_tableView_clicked(const QModelIndex &index)
+{
+    if(!index.isValid()) return ;
+    currentrow = index.row();
 }

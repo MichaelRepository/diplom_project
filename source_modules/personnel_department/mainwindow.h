@@ -46,7 +46,6 @@ public:
 
     void    init_sys();                                                         /// подготовить систему
     QString get_connect_name();                                                 /// вернуть имя подключения к БД
-    int     get_selected_rows();                                                /// вернуть число выделенных строк в таблице
 
 private slots:
     void refresh_menu();                                                        /// обновить меню

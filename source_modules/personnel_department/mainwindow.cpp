@@ -163,17 +163,14 @@ void MainWindow::init_sys()
     query       = new QSqlQuery(db);                                            /// создание и привязка запроса к подключению
     querymodel  = new QSqlQueryModel();                                         /// создание модели данных
     ui->tableView->setModel(querymodel);                                        /// привязка вьювера и модели
+
+    /// обработка выделения строк
+    QObject::connect (ui->tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
+                      this,                            &MainWindow::tableView_items_selected);
+
+
     set_current_table(SPECIALITY, BUTTONMODE, 0);                               /// установить текущую таблицу
-
-    QItemSelectionModel* selectionmodel = ui->tableView->selectionModel();      /// обработка выделения строк
-    /*QObject::connect(selectionmodel,
-                     SIGNAL(selectionChanged(QItemSelection, QItemSelection)),
-                     this, SLOT (on_tableView_items_selected()) );*/
-
-    QObject::connect (selectionmodel, &QItemSelectionModel::selectionChanged,
-                      this,           &MainWindow::tableView_items_selected);
-
-    show();
+    this->show();
 }
 
 QString MainWindow::get_connect_name()
@@ -181,13 +178,9 @@ QString MainWindow::get_connect_name()
     return connectionname;
 }
 
-int MainWindow::get_selected_rows()
-{
-    return ui->tableView->selectionModel()->selectedRows().size();
-}
-
 void MainWindow::refresh_menu()
 {
+    /// переключить состояние кнопок панели меню, зависимых от активной таблицы
     switch (currenttable){
     case SPECIALITY:
         ui->Switch_table_spec_button->setChecked(true);
@@ -211,11 +204,18 @@ void MainWindow::refresh_menu()
         Status_label_curtable->setText("Таблица: Студент ");
         break;
     }
-    Status_label_count_rows->setText(" Число записей: "+
-                                     QString::number(query->size())+" ");
+
+    /// определить число выделенных записей активной таблицы
     int countselectedrows = ui->tableView->selectionModel()->selectedRows().size();
-    Table_record_edit->setEnabled(countselectedrows == 1);
-    Status_label_count_selected->setText("Выделено строк: "+QString::number(countselectedrows));
+    bool state = (countselectedrows == 1);
+    /// переключить состояние кнопок и элементов контекстного меню, зависимых от числа выделенных записей
+    ui->Edit_button1->setEnabled(state);
+    Table_record_edit->setEnabled(state);
+
+    /// обновить надписи в статус баре
+    Status_label_count_rows->setText    (" Число записей: "+ QString::number(query->size())+" ");
+    Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
+    Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
 }
 
 void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode,
@@ -414,16 +414,13 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
     subtabledlg->move(pos);
     /// вывод диалогового окна с суб таблицей в качестве контекстного меню
     subtabledlg->ExecSqlQuery(subtable,idsubject);
+    subtabledlg->exec();
 
 }
 
 void MainWindow::tableView_items_selected()
 {
-    int countselectedrows = ui->tableView->selectionModel()->selectedRows().size();
-    bool satate = countselectedrows == 1;
-    Table_record_edit->setEnabled(satate);
-    ui->Edit_button1->setEnabled(satate);
-    Status_label_count_selected->setText("Выделено строк: "+QString::number(countselectedrows));
+    refresh_menu();
 }
 
 void MainWindow::add_new_record()                                               /// добавить запись
@@ -471,13 +468,18 @@ void MainWindow::edit_records()                                                 
     case GROUP:{
         /// подготовка модели данных записи (атрибут, значение)
         /// получение списка всех существующих специальностей  в виде подтаблицы
-        SubTableDialog subtableviewer(connectionname);                          /// создается виджет для отображения субтаблицы
+        SubTableDialog* subtableviewer = new SubTableDialog(connectionname);    /// создается виджет для отображения субтаблицы
+        QStringList headerlist;
+        headerlist <<"Шифр" << "Аббревиатура";
+        subtableviewer->setHeadersNameList(headerlist);
+        subtableviewer->setWindowFlags(Qt::Popup);
+        subtableviewer->setDisplayMode(false,false,false);                      /// настройка отображения окна
         /// передача текста запроса
-        //subtableviewer->ExecSqlQuery("SELECT idspeciality, abbreviation FROM speciality ORDER BY idspeciality");
+        subtableviewer->ExecSqlQuery("SELECT idspeciality, abbreviation FROM "
+                                     "speciality ORDER BY idspeciality");
+        tableattributelist.insert("Специальность",subtableviewer);
 
-        tableattributelist.insert("Специальность",&subtableviewer);
-
-        recordmodel.modelAddRow("Специальность",   QVariant(""));
+        recordmodel.modelAddRow("Специальность",   query->value("speciality"));
         recordmodel.modelAddRow("Наименование",    query->value("name"));
         recordmodel.modelAddRow("Год создания",    query->value("yearformation"));
         recordmodel.modelAddRow("Форма обучения",  query->value("form"));
@@ -493,15 +495,18 @@ void MainWindow::edit_records()                                                 
         break;
     }
     }
-    dlgrecordedit.setModel(&recordmodel,&reglist,&tableattributelist);
+    dlgrecordedit.setModel(&recordmodel, &reglist, &tableattributelist);
 
     dlgrecordedit.exec();
     query->first();
 
-    /** удаление временных данных
-    recordmodel.deleteLater();
-    reglist.clear();
-    tableattributelist.clear(); **/
+    //удаление временных данных
+    QMap<QString, SubTableDialog*>::const_iterator i = tableattributelist.constBegin();
+    while (i != tableattributelist.constEnd()) {
+        delete i.value();
+        ++i;
+    }
+    tableattributelist.clear();
 }
 
 void MainWindow::on_Edit_button1_clicked()

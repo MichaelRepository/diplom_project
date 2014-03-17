@@ -25,9 +25,9 @@ public:
                   QList<QString>* regexplist = 0,                               /// передать список рег выражений валидаторам
                   QMap<QString, SubTableDialog*>* tableattributelist  = 0);     /// передать список атрибутов, являющихся субтаблицами
 
+
 private:
     Ui::DialogEditRecord *ui;
-
     EditRecordModel* recordmodel;                                               /// модель данных для одной записи
 };
 

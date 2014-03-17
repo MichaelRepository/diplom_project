@@ -31,10 +31,10 @@ QWidget *RecordDelegate::createEditor(QWidget *parent,
     /// проверка является ли атрибут субтаблицей
     if(tableattributelist !=0 && tableattributelist->size() > 0 &&
        tableattributelist->contains(curatribut)){
-            /// вернуть в качечтсве редактора кнопку вызова диалога вывода субтаблицы
+            /// вернуть в качестве редактора кнопку вызова диалога вывода субтаблицы
             DelegatButton* button = new DelegatButton(parent);
             SubTableDialog *subtabledlg = tableattributelist->value(curatribut);
-            //button->setSubTableDialog(subtabledlg);
+            button->setSubTableDialog(subtabledlg);
             button->setFixedSize(option.rect.width(),option.rect.height());
             return button;
     }

@@ -242,6 +242,12 @@ border:1 solid #2C3033;
      <property name="frameShadow">
       <enum>QFrame::Plain</enum>
      </property>
+     <property name="selectionMode">
+      <enum>QAbstractItemView::SingleSelection</enum>
+     </property>
+     <property name="selectionBehavior">
+      <enum>QAbstractItemView::SelectRows</enum>
+     </property>
      <property name="cornerButtonEnabled">
       <bool>false</bool>
      </property>
