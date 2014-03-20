@@ -16,8 +16,8 @@
 
 /// хедеры для таблицы
 #include "QSpreadsheetHeaderView.h"
-/// диалог для субтаблиц
-#include "subtabledialog.h"
+/// виджет для субтаблиц
+#include "subtablewidget.h"
 
 #include "editrecordmodel.h"
 #include "dialogeditrecord.h"
@@ -78,7 +78,7 @@ private:
     MessDlg             messdlg;
     dbMessDlg           dbmessdlg;
 
-    SubTableDialog*     subtabledlg;
+    SubTableWidget*     subtablewidget;
 
     QLabel*         Status_label;                                               /// используется для создания отступа
     QLabel*         Status_label_curtable;                                      /// отображает название активной таблицы

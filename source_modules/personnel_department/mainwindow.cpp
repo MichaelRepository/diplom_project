@@ -131,24 +131,10 @@ void MainWindow::init_sys()
         exit(0);
     }
 
-/*
-    // временн`ая заглушка. убрать!ё
-    QTime time;
-    time.start();
-
-    for (int i = 0; i < 1000; ){
-        splashwindow->showMessage("Loaded modules "+QString::number(i)+"%");
-        QApplication::processEvents();
-        if (time.elapsed() > 10) {
-            time.start();
-            ++i;
-        }
-    }
-*/
     splashwindow->finish(&authorizedlg);
     /// создание окна для отображения подтаблиц
-    subtabledlg = new SubTableDialog(connectionname, this);                        /// установка флага - "контекстное меню", для диалога субтаблиц
-    subtabledlg->setWindowFlags(Qt::Popup);
+    subtablewidget = new SubTableWidget(connectionname, this);                  /// установка флага - "контекстное меню", для диалога субтаблиц
+    subtablewidget->setWindowFlags(Qt::Popup);
 
     /// авторизация пользователя
     authorizedlg.setconnectionname(connectionname);                             /// передать имя подключения
@@ -204,14 +190,12 @@ void MainWindow::refresh_menu()
         Status_label_curtable->setText("Таблица: Студент ");
         break;
     }
-
     /// определить число выделенных записей активной таблицы
     int countselectedrows = ui->tableView->selectionModel()->selectedRows().size();
     bool state = (countselectedrows == 1);
     /// переключить состояние кнопок и элементов контекстного меню, зависимых от числа выделенных записей
     ui->Edit_button1->setEnabled(state);
     Table_record_edit->setEnabled(state);
-
     /// обновить надписи в статус баре
     Status_label_count_rows->setText    (" Число записей: "+ QString::number(query->size())+" ");
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
@@ -222,49 +206,113 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode,
                                    int keyvalue)
 {
     query->finish();                                                            /// сбросить предыдущий результат запроса
-                                                                                /// формирование запросов, относительно текущей таблицы
+    querymodel->clear();                                                        /// очистить модель данных запроса
+    /// формирование запросов, относительно текущей таблицы
+    QStringList headerList;                                                     /// список заголовков таблицы
     switch(table){
     case SPECIALITY:
-        if(mode == BUTTONMODE)
-            query->prepare("SELECT * FROM speciality ORDER BY idspeciality");
-        else return ;
+        if(mode == BUTTONMODE) query->prepare("SELECT * "
+                                              "FROM speciality "
+                                              "ORDER BY idspeciality");
+        else return;
+        headerList << "Шифр"
+                   << "Аббревиатура"
+                   << "Наименование"
+                   << "Период обучения"
+                   << "Базируется на"
+                   << "Специализация";
         break;
     case GROUP:
         if(mode == BUTTONMODE)
-            query->prepare("SELECT * FROM groups ORDER BY idgroup");
+            query->prepare("SELECT * "
+                           "FROM groups "
+                           "ORDER BY idgroup");
         else{
-            query->prepare("SELECT * FROM groups WHERE speciality = :id "
-                           " ORDER BY idgroup");
+            query->prepare("SELECT * "
+                           "FROM groups "
+                           "WHERE speciality = :id "
+                           "ORDER BY idgroup");
             query->bindValue(":id",keyvalue);
         }
+        headerList << "Номер"
+                   << "Специальность"
+                   << "Наименование"
+                   << "Год формирования"
+                   << "Форма обучения"
+                   << "Бюджет"
+                   << "Курс";
         break;
     case STUDENT:
         if(mode == BUTTONMODE)
-            query->prepare(
-                        "SELECT student.subject, student.numbertestbook, "
-                                "subject.surname, subject.name, subject.patronymic, subject.sex, "
-                                "groups.name, groups.course, groups.form, groups.budget, "
-                                "subject.datebirth, subject.placebirth, "
-                                "'...' AS citizenship, "
-                                "'...' AS residence, "
-                                "'...' AS passports, "
-                                "'...' AS represent, "
-                                "'...' AS education, "
-                                "'...' AS privileges, "
-                               /** "'...' AS progress, " **/
-                                "'...' AS moreinf	 "
-                        "FROM 	student "
-                        "LEFT JOIN groups  ON (student.group = groups.idgroup) "
-                        "LEFT JOIN subject ON (student.subject = subject.idsubject) "
-
-                        );
+            query->prepare("SELECT "
+                           "student.subject, "
+                           "student.numbertestbook, "
+                           "subject.surname, "
+                           "subject.name, "
+                           "subject.patronymic, "
+                           "subject.sex, "
+                           "groups.name, "
+                           "groups.course, "
+                           "groups.form, "
+                           "groups.budget, "
+                           "subject.datebirth, "
+                           "subject.placebirth, "
+                           "'...' AS citizenship, "
+                           "'...' AS residence, "
+                           "'...' AS passports, "
+                           "'...' AS represent, "
+                           "'...' AS education, "
+                           "'...' AS privileges, "
+                           "'...' AS moreinf "
+                           "FROM student "
+                           "LEFT JOIN groups  ON (student.group = groups.idgroup) "
+                           "LEFT JOIN subject ON (student.subject = subject.idsubject) ");
         else{
-            query->prepare("SELECT * FROM student INNER JOIN subject ON "
-                           " student.subject = subject.idsubject AND "
-                           " student.group = :id ORDER BY subject");
-            query->bindValue(":id",keyvalue);           
-
+            query->prepare("SELECT "
+                           "student.subject, "
+                           "student.numbertestbook, "
+                           "subject.surname, "
+                           "subject.name, "
+                           "subject.patronymic, "
+                           "subject.sex, "
+                           "groups.name, "
+                           "groups.course, "
+                           "groups.form, "
+                           "groups.budget, "
+                           "subject.datebirth, "
+                           "subject.placebirth, "
+                           "'...' AS citizenship, "
+                           "'...' AS residence, "
+                           "'...' AS passports, "
+                           "'...' AS represent, "
+                           "'...' AS education, "
+                           "'...' AS privileges, "
+                           "'...' AS moreinf "
+                           "FROM student "
+                           "LEFT JOIN groups  ON (student.group = groups.idgroup) "
+                           "LEFT JOIN subject ON (student.subject = subject.idsubject) "
+                           "WHERE student.group = :id");
+            query->bindValue(":id",keyvalue);
         }
+        headerList << "#"
+                   << "Номер зачетки"
+                   << "Фамилия"
+                   << "Имя"
+                   << "Отчество"
+                   << "Пол"
+                   << "Группа"
+                   << "Курс"
+                   << "Форма обучения"
+                   << "Бюджет"
+                   << "Дата рождения"
+                   << "Место рождения"
+                   << "Гражданство"
+                   << "Проживание"
+                   << "Паспорт"
+                   << "Представители"
+                   << "Образование"
+                   << "Льготы"
+                   << "Дополнительно";
         break;
     }
 
@@ -277,46 +325,9 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode,
     currenttable = table;
     querymodel->setQuery(*query);                                               /// связать модель с запросом
                                                                                 /// подпись заголовков таблицы
-    switch(table){
-    case SPECIALITY:
-        ui->tableView->model()->setHeaderData(0, Qt::Horizontal, tr("Шифр"));
-        ui->tableView->model()->setHeaderData(1, Qt::Horizontal, tr("Аббревиатура"));
-        ui->tableView->model()->setHeaderData(2, Qt::Horizontal, tr("Наименование"));
-        ui->tableView->model()->setHeaderData(3, Qt::Horizontal, tr("Период обучения"));
-        ui->tableView->model()->setHeaderData(4, Qt::Horizontal, tr("Базируется на"));
-        ui->tableView->model()->setHeaderData(5, Qt::Horizontal, tr("Специализация"));
-        break;
-    case GROUP:
-        ui->tableView->model()->setHeaderData(0, Qt::Horizontal, tr("Номер"));
-        ui->tableView->model()->setHeaderData(1, Qt::Horizontal, tr("Специальность"));
-        ui->tableView->model()->setHeaderData(2, Qt::Horizontal, tr("Наименование"));
-        ui->tableView->model()->setHeaderData(3, Qt::Horizontal, tr("Год формирования"));
-        ui->tableView->model()->setHeaderData(4, Qt::Horizontal, tr("Форма обучения"));
-        ui->tableView->model()->setHeaderData(5, Qt::Horizontal, tr("Бюджет"));
-        break;
-    case STUDENT:
-        ui->tableView->model()->setHeaderData(0,    Qt::Horizontal, tr("#"));
-        ui->tableView->model()->setHeaderData(1,    Qt::Horizontal, tr("Номер зачетки"));
-        ui->tableView->model()->setHeaderData(2,    Qt::Horizontal, tr("Фамилия"));
-        ui->tableView->model()->setHeaderData(3,    Qt::Horizontal, tr("Имя"));
-        ui->tableView->model()->setHeaderData(4,    Qt::Horizontal, tr("Отчество"));
-        ui->tableView->model()->setHeaderData(5,    Qt::Horizontal, tr("Пол"));
-        ui->tableView->model()->setHeaderData(6,    Qt::Horizontal, tr("Группа"));
-        ui->tableView->model()->setHeaderData(7,    Qt::Horizontal, tr("Курс"));
-        ui->tableView->model()->setHeaderData(8,    Qt::Horizontal, tr("Форма обучения"));
-        ui->tableView->model()->setHeaderData(9,    Qt::Horizontal, tr("Бюджет"));
-        ui->tableView->model()->setHeaderData(10,   Qt::Horizontal, tr("Дата рождения"));
-        ui->tableView->model()->setHeaderData(11,   Qt::Horizontal, tr("Место рождения"));
-        ui->tableView->model()->setHeaderData(12,   Qt::Horizontal, tr("Гражданство"));
-        ui->tableView->model()->setHeaderData(13,   Qt::Horizontal, tr("Проживание"));
-        ui->tableView->model()->setHeaderData(14,   Qt::Horizontal, tr("Паспорт"));
-        ui->tableView->model()->setHeaderData(15,   Qt::Horizontal, tr("Представители"));
-        ui->tableView->model()->setHeaderData(16,   Qt::Horizontal, tr("Образование"));
-        ui->tableView->model()->setHeaderData(17,   Qt::Horizontal, tr("Льготы"));
-        /*ui->tableView->model()->setHeaderData(18,   Qt::Horizontal, tr("Достижения"));*/
-        ui->tableView->model()->setHeaderData(18,   Qt::Horizontal, tr("Дополнительно"));
-        break;
-    }
+
+    for(int i = 0; i < headerList.size(); ++i)
+        ui->tableView->model()->setHeaderData(i,Qt::Horizontal,headerList.at(i));
 
     ui->tableView->resizeColumnsToContents();
     ui->tableView->resizeRowsToContents();
@@ -370,8 +381,8 @@ void MainWindow::on_Switch_table_stud_button_clicked()
 
 void MainWindow::on_tableView_clicked(const QModelIndex &index)
 {
-    if(currenttable != STUDENT) return ;                                        /// только для таблицы студенты
-    if(index.column() < 12)     return ;                                        /// только для 12-19 столбцов таблицы
+    if(currenttable != STUDENT)   return ;                                      /// только для таблицы студенты
+    if(index.column() < 12)       return ;                                      /// только для 12-19 столбцов таблицы
     if(!query->seek(index.row())) return ;                                      /// спозиционироваться на нужную строку
 
     int idsubject = query->value("subject").toInt();
@@ -379,7 +390,7 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
     QString str1 = query->value("surname").toString();
     QString str2 = index.model()->headerData(index.column(),
                                              Qt::Horizontal).toString();
-    subtabledlg->setTitleText(str1+" >> "+str2);
+    subtablewidget->setTitleText(str1+" >> "+str2);
     SubTable subtable;
     switch(index.column()){
     case 12: subtable = CITIZENSHIP;
@@ -405,16 +416,16 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
     /// если позиция курсора по Y больше половины высоты десктопа + 200px
     /// выводить контекстное меню над курсором иначе под курсором
     QPoint pos = cursor().pos();
-    if(cursor().pos().y() > (QApplication::desktop()->availableGeometry(0).height()/2 + 200))
-        pos.setY(pos.y() - subtabledlg->height());
+    if(cursor().pos().y() + subtablewidget->height() > QApplication::desktop()->availableGeometry(0).height())
+        pos.setY(pos.y() - subtablewidget->height());
     ///тоже самое по X
-    if(cursor().pos().x() > (QApplication::desktop()->availableGeometry(0).width()/2 + 500))
-        pos.setX(pos.x() - subtabledlg->width());
+    if(cursor().pos().x() + subtablewidget->width() > QApplication::desktop()->availableGeometry(0).width())
+        pos.setX(pos.x() - subtablewidget->width());
 
-    subtabledlg->move(pos);
+    subtablewidget->move(pos);
     /// вывод диалогового окна с суб таблицей в качестве контекстного меню
-    subtabledlg->ExecSqlQuery(subtable,idsubject);
-    subtabledlg->exec();
+    subtablewidget->ExecSqlQuery(subtable,idsubject);
+    subtablewidget->show();
 
 }
 
@@ -440,13 +451,11 @@ void MainWindow::edit_records()                                                 
     if(rowslist.size() != 1) return ;                                           /// список содержит не одну строку -> завершить
     int row = rowslist[0].row();                                                /// получить номер выделенной строки
     query->first();
-    for (;row != 0; row--){                                                     /// спозиционироваться на нужной записи
-        query->next();
-    }
+    query->seek(row);
 
     EditRecordModel recordmodel;                                                /// модель данных для записи таблицы
     QList<QString> reglist;                                                     /// список регулярных выражений для валиадторов
-    QMap<QString, SubTableDialog *> tableattributelist;                         /// список спецатрибутов, являющихся субтаблицами. список(атрибут, визуализатор субтаблицы)
+    QMap<QString, SubTableWidget *> tableattributelist;                         /// список спецатрибутов, являющихся субтаблицами. список(атрибут, визуализатор субтаблицы)
 
     switch(currenttable){
     case SPECIALITY:
@@ -468,16 +477,30 @@ void MainWindow::edit_records()                                                 
     case GROUP:{
         /// подготовка модели данных записи (атрибут, значение)
         /// получение списка всех существующих специальностей  в виде подтаблицы
-        SubTableDialog* subtableviewer = new SubTableDialog(connectionname);    /// создается виджет для отображения субтаблицы
-        QStringList headerlist;
-        headerlist <<"Шифр" << "Аббревиатура";
-        subtableviewer->setHeadersNameList(headerlist);
-        subtableviewer->setWindowFlags(Qt::Popup);
-        subtableviewer->setDisplayMode(false,false,false);                      /// настройка отображения окна
+        SubTableWidget* subtableviewer = new SubTableWidget(connectionname);    /// создается виджет для отображения субтаблицы
+        QStringList headerlist;                                                 /// список заголовков таблицы
+        QStringList defaultattribute;                                           /// список атрибутов, выводимых в редакторе строки
+        headerlist << "Шифр"
+                   << "Аббревиатура";
+        defaultattribute << "idspeciality"
+                         << "abbreviation";
+        subtableviewer->setHeadersNameList(headerlist);                         /// установлен список заголовков
+        subtableviewer->setDefaultAttributesList(defaultattribute);             /// установлен список атрибутов - по умолчанию
         /// передача текста запроса
-        subtableviewer->ExecSqlQuery("SELECT idspeciality, abbreviation FROM "
-                                     "speciality ORDER BY idspeciality");
-        tableattributelist.insert("Специальность",subtableviewer);
+        subtableviewer->ExecSqlQuery("SELECT "
+                                     "idspeciality, "
+                                     "abbreviation "
+                                     "FROM speciality "
+                                     "ORDER BY idspeciality");
+        QList<QPair<QString,QVariant> > attrlist;                               /// список атр+знач для установки текущей строки в таблице
+        attrlist.append(qMakePair(QString("idspeciality"),
+                                  query->value("speciality") ));                /// строка быдет выбрана по значению атрибута speciality
+        if(!subtableviewer->setCurrentRow(attrlist)){
+            /// ОШИБКА, ЗАПИСЬ НЕ НАЙДЕНА
+            return ;
+        }
+
+        tableattributelist.insert("Специальность", subtableviewer);             /// атрибут "Специальность" добавлена в список атриб, отображающихся в виде таблицы
 
         recordmodel.modelAddRow("Специальность",   query->value("speciality"));
         recordmodel.modelAddRow("Наименование",    query->value("name"));
@@ -498,15 +521,17 @@ void MainWindow::edit_records()                                                 
     dlgrecordedit.setModel(&recordmodel, &reglist, &tableattributelist);
 
     dlgrecordedit.exec();
-    query->first();
+    dlgrecordedit.setFocus();
+
 
     //удаление временных данных
-    QMap<QString, SubTableDialog*>::const_iterator i = tableattributelist.constBegin();
+    QMap<QString, SubTableWidget*>::const_iterator i = tableattributelist.constBegin();
     while (i != tableattributelist.constEnd()) {
         delete i.value();
         ++i;
     }
     tableattributelist.clear();
+    query->first();
 }
 
 void MainWindow::on_Edit_button1_clicked()

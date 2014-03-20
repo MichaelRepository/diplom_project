@@ -23,7 +23,7 @@ SOURCES += main.cpp\
     dialogeditrecord.cpp \
     editrecordmodel.cpp \
     recorddelegate.cpp \
-    subtabledialog.cpp
+    subtablewidget.cpp
 
 HEADERS  += mainwindow.h \
     messdlg.h \
@@ -34,14 +34,14 @@ HEADERS  += mainwindow.h \
     dialogeditrecord.h \
     editrecordmodel.h \
     recorddelegate.h \
-    subtabledialog.h
+    subtablewidget.h
 
 FORMS    += mainwindow.ui \
     messdlg.ui \
     dbmessdlg.ui \
     authorizdlg.ui \
     dialogeditrecord.ui \
-    subtabledialog.ui
+    subtablewidget.ui
 
 RESOURCES += ../../resfile/src.qrc
 

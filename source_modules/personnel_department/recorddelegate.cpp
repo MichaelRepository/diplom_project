@@ -16,7 +16,7 @@ void RecordDelegate::setRegStrList(QList<QString> *list)
     regexplist = list;
 }
 
-void RecordDelegate::setTableAttributeList(QMap<QString, SubTableDialog *> *list)
+void RecordDelegate::setTableAttributeList(QMap<QString, SubTableWidget *> *list)
 {
     tableattributelist = list;
 }
@@ -26,16 +26,16 @@ QWidget *RecordDelegate::createEditor(QWidget *parent,
                                       const QModelIndex &index) const
 {
     QVariant::Type curtype = index.data().type();                               /// определяет тип данных
-    QModelIndex atrivuteindex = index.model()->index(index.row(),0,index.parent());
-    QString curatribut = atrivuteindex.data().toString();
+    QModelIndex atributeindex = index.model()->index(index.row(),0);
+    QString curatribut = atributeindex.data().toString();
+
     /// проверка является ли атрибут субтаблицей
     if(tableattributelist !=0 && tableattributelist->size() > 0 &&
        tableattributelist->contains(curatribut)){
-            /// вернуть в качестве редактора кнопку вызова диалога вывода субтаблицы
-            DelegatButton* button = new DelegatButton(parent);
-            SubTableDialog *subtabledlg = tableattributelist->value(curatribut);
+            /// вернуть в качестве редактора диалог вывода субтаблицы
+            DelegatButton *button = new DelegatButton(parent);
+            SubTableWidget*subtabledlg = tableattributelist->value(curatribut);
             button->setSubTableDialog(subtabledlg);
-            button->setFixedSize(option.rect.width(),option.rect.height());
             return button;
     }
 
@@ -56,28 +56,6 @@ QWidget *RecordDelegate::createEditor(QWidget *parent,
         lineedit->setFixedSize(option.rect.width(),option.rect.height());
         return lineedit;
     }
-    /*case QVariant::Map:{                                                        /// редактор - таблица(диалог субтаблиц)
-        QComboBox* combobox = new QComboBox(parent);
-        combobox->setFixedSize(option.rect.width(),option.rect.height());
-        QStringList list
-        combobox->addItems(index.data().toStringList());
-        /// получить название текущего списка (соответсвует названию атрибута)
-        QModelIndex atrivuteindex = index.model()->index(index.row(),0,index.parent());
-        QString  curlist = atrivuteindex.data().toString();
-        QVariant suritem;
-        if(comboboxcuritem->contains(curlist) && comboboxcuritem->size() != 0)
-            suritem = comboboxcuritem->value(curlist);
-        else{
-            MessDlg dlg;
-            dlg.setdata(tr("Системная ошибка"),
-                        tr("Ошибка: данные для отображения отсутствуют"),
-                        "Произошла ошибка при попытке отобразить текущее значение атрибута "+curlist);
-            dlg.exec();
-            return combobox;
-        }
-        combobox->setCurrentText(suritem.toString());
-        return combobox;
-    }*/
     default:
         return QStyledItemDelegate::createEditor(parent, option, index);        /// выбор за QStyledItemDelegate
     }
@@ -88,11 +66,17 @@ void RecordDelegate::setEditorData(QWidget *editor,
                                    const QModelIndex &index) const
 {
     QVariant::Type curtype = index.data().type();                               /// определяет тип данны
-    QModelIndex atrivuteindex = index.model()->index(index.row(),0,index.parent());
+    QModelIndex atrivuteindex = index.model()->index(index.row(),0);
     QString curatribut = atrivuteindex.data().toString();
     /// проверка является ли атрибут субтаблицей
     if(tableattributelist !=0 && tableattributelist->size() > 0 &&
-       tableattributelist->contains(curatribut)) return ;
+       tableattributelist->contains(curatribut)){
+        DelegatButton *button = static_cast<DelegatButton*>(editor);
+        SubTableWidget *subtabledlg = tableattributelist->value(curatribut);
+        QVariantList list = subtabledlg->getDefaultAttributesValue();
+        if(list.at(0).isValid()) button->setText(list.at(0).toString());
+        return ;
+    }
 
 
     /// создание валидатора для текущего редактора
@@ -127,13 +111,6 @@ void RecordDelegate::setEditorData(QWidget *editor,
         lineedit->setValidator(validator);                                      /// привязка валидатора и поля ввода
         break;
     }
-    /*case QVariant::StringList:{
-        QComboBox* combobox = static_cast<QComboBox*>(editor);
-
-        combobox->setCurrentIndex(0);
-        break;
-    }*/
-
     default: QStyledItemDelegate::setEditorData(editor, index);
     }
 
@@ -147,7 +124,11 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     QString curatribut = atrivuteindex.data().toString();
     /// проверка является ли атрибут субтаблицей
     if(tableattributelist !=0 && tableattributelist->size() > 0 &&
-       tableattributelist->contains(curatribut))return ;
+       tableattributelist->contains(curatribut)){
+        DelegatButton *button = static_cast<DelegatButton*>(editor);
+            model->setData(index, QVariant(button->text()));
+        return ;
+    }
 
     switch (curtype) {
     case QVariant::Date:{
@@ -170,53 +151,14 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         if(isnum) model->setData(index, num);
         break;
     }
-    /*case QVariant::StringList:{
-        //QComboBox* combobox = static_cast<QComboBox*>(editor);
-        //combobox->addItems(index.data().toStringList());
-        //combobox->setCurrentIndex(0);
-        break;
-    }*/
     default: QStyledItemDelegate::setModelData(editor, model, index);
     }
 }
 
-/*void RecordDelegate::updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
-                                          const QModelIndex &) const
-{
-    editor->setGeometry(option.rect);
-}*/
-
 void RecordDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                            const QModelIndex &index) const
 {
-    QVariant::Type curtype = index.data().type();
-    QModelIndex atrivuteindex = index.model()->index(index.row(),0,index.parent());
-    QString curatribut = atrivuteindex.data().toString();
-
     QStyledItemDelegate::paint(painter, option, index);                         /// стандартная прорисовка элемента
 
-
-    /// проверка является ли атрибут субтаблицей
-   /* if(tableattributelist !=0 && tableattributelist->size() > 0 &&
-       tableattributelist->contains(curatribut)){
-        QStyleOptionViewItemV4 item(option);                                    /// создается стиль прорисовки
-            item.text = "субтаблица";                                                     /// задается текст
-
-
-        QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &item, painter);/// прорисовка
-    }*/
-
-
-
-    /*
-    dataedit->setFixedSize(option.rect.width(),option.rect.height());
-    calendar->setFixedWidth(option.rect.width());
-
-    QPixmap pixmap(dataedit->size());
-    //if (!QPixmapCache::find(cacheKey, &pixmap)) {
-    dataedit->render(&pixmap);
-    //QPixmapCache::insert(cacheKey, pixmap);
-    //}
-    painter->drawPixmap(dataedit->rect(), pixmap);*/
 }
 

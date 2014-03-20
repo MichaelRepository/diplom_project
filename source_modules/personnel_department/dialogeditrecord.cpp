@@ -23,7 +23,7 @@ DialogEditRecord::~DialogEditRecord()
 }
 
 void DialogEditRecord::setModel(EditRecordModel *model, QList<QString> *regexplist,
-                                QMap<QString, SubTableDialog *> *tableattributelist)
+                                QMap<QString, SubTableWidget *> *tableattributelist)
 {
     /// приявязка вьювера к модели
     recordmodel = model;

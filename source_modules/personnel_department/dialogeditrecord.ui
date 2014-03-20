@@ -6,9 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>436</width>
-    <height>371</height>
+    <width>304</width>
+    <height>355</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>304</width>
+    <height>355</height>
+   </size>
   </property>
   <property name="mouseTracking">
    <bool>true</bool>
@@ -17,6 +23,18 @@
    <string>Dialog</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
+    <number>6</number>
+   </property>
    <item row="0" column="0" colspan="3">
     <widget class="QTreeView" name="treeView">
      <property name="styleSheet">
@@ -25,20 +43,15 @@
 	height:100%;
 	min-width:100%;
 }
-/*9
-QAbstractItemView:item
-{
-	color:#000;
-  	border:1 solid #000;
-  	border-top:none;
-	border-left:none;
-	background:#FFFFBF;
-}*/
+
 QAbstractItemView:item::selected{
 color:#fff;
 background-color: #3399FF;
 }
 </string>
+     </property>
+     <property name="editTriggers">
+      <set>QAbstractItemView::CurrentChanged|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
      </property>
      <property name="showDropIndicator" stdset="0">
       <bool>true</bool>
@@ -47,6 +60,9 @@ background-color: #3399FF;
       <bool>true</bool>
      </property>
      <property name="rootIsDecorated">
+      <bool>false</bool>
+     </property>
+     <property name="expandsOnDoubleClick">
       <bool>false</bool>
      </property>
     </widget>

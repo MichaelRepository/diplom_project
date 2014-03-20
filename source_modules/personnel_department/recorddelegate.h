@@ -16,53 +16,76 @@
 #include <QPainter>
 
 #include <QStyledItemDelegate>
-#include <QLabel>
 #include <QDateEdit>
 #include <QLineEdit>
 #include <QSpinBox>
-#include <QComboBox>
 #include <QRegExpValidator>
-#include <QVector>
 #include <QMap>
 
 #include <QApplication>
 
 #include "messdlg.h"
-#include "subtabledialog.h"
+#include "subtablewidget.h"
 
-#include <QToolButton>
+#include <QComboBox>
+#include <QPushButton>
 #include <QTableView>
+#include <QWidget>
+#include <QRect>
 /**
-    кнопка, при нажатии которой отобразится субтаблица
+    кнопка, при нажатии которой отобразится виджет с субтаблицей
 **/
-class DelegatButton : public QToolButton
+class DelegatButton : public QPushButton
 {
     Q_OBJECT
 public:
-    DelegatButton(QWidget *parent):QToolButton(parent){
-        QObject::connect(this,&DelegatButton::clicked,
-                         this,&DelegatButton::click);
-    }
+    DelegatButton(QWidget *parent):QPushButton(parent){ subtableshov = false; }
 
-    void setSubTableDialog(SubTableDialog *dlg){
+    void setSubTableDialog(SubTableWidget *dlg){                                /// получить виджет для субтаблицы
         subtabledlg = dlg;
+        /// организовать реакцию кнопки на выбор строки в субтаблице
+        QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
+                         this,        &DelegatButton::update);
+        subtableshov = false;
+    }
+    void updateDate(){                                                          /// перезаполучить данные у виджета субтаблицы
+        QVariantList list = subtabledlg->getDefaultAttributesValue();
+        this->setText(list.at(0).toString());
+    }
+    void mouseReleaseEvent(QMouseEvent * event){                                /// отобразить виджет субтаблицы при отпускани кнопки
+        if(subtableshov){
+            this->close();
+            subtabledlg->hide();
+            subtableshov = false;
+            return;
+        }
+        subtabledlg->move(this->mapToGlobal( QPoint(0, this->height())) );
         subtabledlg->setWindowFlags(Qt::Popup);
+        subtabledlg->setFocusPolicy(Qt::NoFocus);
+        subtabledlg->setDisplayMode(false,false,false,false,Qt::NoFocus);
+        subtabledlg->setFocusProxy(this);
+        subtabledlg->resize(this->size().width()+70,200);
+        subtabledlg->show();
+        subtableshov = true;
     }
 
-public slots:
-    void click(){
-        QPoint newpos( this->rect().x(), this->rect().y()+this->height() );
-        subtabledlg->resize(this->rect().width(), 200);
-        subtabledlg->move(this->mapToGlobal(newpos) );
+    void paintEvent ( QPaintEvent * ){                                          /// переопределить прорисовку кнопки
+       QStyleOptionButton option;
+       option.initFrom(this);
+       option.features = QStyleOptionButton::HasMenu;                           /// отобразить индикатор меню
 
-        subtabledlg->exec();
+       QPainter painter (this);
+       style()->drawControl( QStyle::CE_PushButton, &option, &painter, this );  /// нарисовать кнопку
+       QRect rect(this->rect().x()+5, this->rect().y()+2 ,
+                  this->width(), this->height());
+       painter.drawText(rect,this->text());                                     /// вывести текст
     }
-
+private slots:
+    void update(){updateDate(), this->repaint();}
 private:
-    SubTableDialog *subtabledlg;
+    SubTableWidget *subtabledlg;
+    bool subtableshov;
 };
-
-
 
 class RecordDelegate : public QStyledItemDelegate
 {
@@ -71,21 +94,18 @@ public:
     ~ RecordDelegate();
 
     void setRegStrList        (QList<QString> *list);                           /// установить список рег. выражений для каждого валидатора данных
-    void setTableAttributeList(QMap<QString, SubTableDialog *> *list);          /// установить список атрибутов, являющихся субтаблицами
+    void setTableAttributeList(QMap<QString, SubTableWidget *> *list);          /// установить список атрибутов, являющихся субтаблицами
 
     QWidget *createEditor(QWidget * parent, const QStyleOptionViewItem & option,/// метод создает редактор для каждого элемента модели
                           const QModelIndex & index) const;
     void	 setEditorData(QWidget * editor, const QModelIndex & index) const;  /// передает в редактор данные из модели
     void	 setModelData(QWidget * editor, QAbstractItemModel * model,         /// пердает данные из редактора в модель
                           const QModelIndex & index) const;
-    /*void     updateEditorGeometry(QWidget *editor, const QStyleOptionViewItem &option,
-                                  const QModelIndex &) const;*/
-
     void	paint(QPainter * painter, const QStyleOptionViewItem & option,
                   const QModelIndex & index) const;
 private:
     QList<QString> *regexplist;                                                 /// список регулярных выражений для валидаторов
-    QMap<QString, SubTableDialog *> *tableattributelist;                        /// список атрибутов, являющихся субтаблицами
+    QMap<QString, SubTableWidget *> *tableattributelist;                        /// список атрибутов, являющихся субтаблицами
 };
 
 #endif // RECORDDELEGATE_H
