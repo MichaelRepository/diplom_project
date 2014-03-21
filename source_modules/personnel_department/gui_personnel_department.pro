@@ -23,7 +23,8 @@ SOURCES += main.cpp\
     dialogeditrecord.cpp \
     editrecordmodel.cpp \
     recorddelegate.cpp \
-    subtablewidget.cpp
+    subtablewidget.cpp \
+    myminiorm.cpp
 
 HEADERS  += mainwindow.h \
     messdlg.h \
@@ -34,7 +35,8 @@ HEADERS  += mainwindow.h \
     dialogeditrecord.h \
     editrecordmodel.h \
     recorddelegate.h \
-    subtablewidget.h
+    subtablewidget.h \
+    myminiorm.h
 
 FORMS    += mainwindow.ui \
     messdlg.ui \

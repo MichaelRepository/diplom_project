@@ -53,6 +53,27 @@ public:
         this->setText(list.at(0).toString());
     }
     void mouseReleaseEvent(QMouseEvent * event){                                /// отобразить виджет субтаблицы при отпускани кнопки
+        showSubtable();
+    }
+
+    void paintEvent ( QPaintEvent * ){                                          /// переопределить прорисовку кнопки
+       QStyleOptionButton option;
+       option.initFrom(this);
+       option.features = QStyleOptionButton::HasMenu;                           /// отобразить индикатор меню
+
+       QPainter painter (this);
+       style()->drawControl( QStyle::CE_PushButton, &option, &painter, this );  /// нарисовать кнопку
+       QRect rect(this->rect().x()+5, this->rect().y()+2 ,
+                  this->width(), this->height());
+       painter.drawText(rect,this->text());                                     /// вывести текст
+    }
+    void showEvent(QShowEvent *event){
+        QPushButton::showEvent(event);
+        showSubtable();
+    }
+
+    void showSubtable()
+    {
         if(subtableshov){
             this->close();
             subtabledlg->hide();
@@ -69,17 +90,6 @@ public:
         subtableshov = true;
     }
 
-    void paintEvent ( QPaintEvent * ){                                          /// переопределить прорисовку кнопки
-       QStyleOptionButton option;
-       option.initFrom(this);
-       option.features = QStyleOptionButton::HasMenu;                           /// отобразить индикатор меню
-
-       QPainter painter (this);
-       style()->drawControl( QStyle::CE_PushButton, &option, &painter, this );  /// нарисовать кнопку
-       QRect rect(this->rect().x()+5, this->rect().y()+2 ,
-                  this->width(), this->height());
-       painter.drawText(rect,this->text());                                     /// вывести текст
-    }
 private slots:
     void update(){updateDate(), this->repaint();}
 private:

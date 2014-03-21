@@ -14,7 +14,9 @@ DialogEditRecord::DialogEditRecord(QWidget *parent) :
     ui->treeView->setSelectionBehavior(QTreeView::SelectRows);
     ui->treeView->setRootIsDecorated(false);
     ui->treeView->setEditTriggers(QAbstractItemView::CurrentChanged |
-                                  QAbstractItemView::SelectedClicked);
+                                  QAbstractItemView::SelectedClicked|
+                                  QAbstractItemView::DoubleClicked  |
+                                  QAbstractItemView::EditKeyPressed);
 }
 
 DialogEditRecord::~DialogEditRecord()
@@ -35,4 +37,12 @@ void DialogEditRecord::setModel(EditRecordModel *model, QList<QString> *regexpli
     delegate->setTableAttributeList(tableattributelist);                        /// передать список атрибутов, являющихся субтаблицами
 
     ui->treeView->setItemDelegate(delegate);
+}
+
+void DialogEditRecord::showEvent(QShowEvent *event)
+{
+    QDialog::showEvent(event);
+    this->setFocus();
+    this->activateWindow();
+    this->raise();
 }

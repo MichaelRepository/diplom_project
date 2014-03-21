@@ -105,8 +105,7 @@ void MainWindow::init_sys()
     splashwindow->showMessage("Start");
     splashwindow->setEnabled(false);                                            /// делаю окно неактивным, чтобы при клике окно не закрывалось
     splashwindow->showMessage("Loaded modules");
-
-    //QApplication::processEvents();
+    QString str;
 
     /// подключение к базе данных
     QSqlDatabase db;
@@ -116,6 +115,7 @@ void MainWindow::init_sys()
         dbmessdlg.showdbmess(db.lastError());
         exit(0);
     }
+
     /// авторизационные данные группы операторов АИС
     /// загрузка из файла
     setting->beginGroup("SqlDatabase");
@@ -124,17 +124,17 @@ void MainWindow::init_sys()
     db.setUserName     (setting->value("UserName",      "").toString());
     db.setPassword     (setting->value("Password",      "").toString());
     setting->endGroup();
+
     /// открытие соединеня
     if(!db.open())
     {
+        str = "соединение с БД не установлено";
         dbmessdlg.showdbmess(db.lastError());
         exit(0);
     }
-
-    splashwindow->finish(&authorizedlg);
-    /// создание окна для отображения подтаблиц
-    subtablewidget = new SubTableWidget(connectionname, this);                  /// установка флага - "контекстное меню", для диалога субтаблиц
-    subtablewidget->setWindowFlags(Qt::Popup);
+    str = "соединение c БД установлено";
+    splashwindow->showMessage(str);
+    QApplication::processEvents();
 
     /// авторизация пользователя
     authorizedlg.setconnectionname(connectionname);                             /// передать имя подключения
@@ -156,6 +156,12 @@ void MainWindow::init_sys()
 
 
     set_current_table(SPECIALITY, BUTTONMODE, 0);                               /// установить текущую таблицу
+
+    /// создание окна для отображения подтаблиц
+    subtablewidget = new SubTableWidget(connectionname, this);                  /// установка флага - "контекстное меню", для диалога субтаблиц
+    subtablewidget->setWindowFlags(Qt::Popup);
+
+    splashwindow->finish(this);
     this->show();
 }
 
@@ -467,12 +473,12 @@ void MainWindow::edit_records()                                                 
         recordmodel.modelAddRow("Базируется на",   query->value("basedon"));
         recordmodel.modelAddRow("Специализация",   query->value("specialization"));
         /// подготовка списка регулярных выражений для валидатора
-        reglist.append("\\d{1,6}");
-        reglist.append("[\\w\\s]{1,50}");
-        reglist.append("[\\w\\s]{1,50}");
-        reglist.append("\\d{1,3}");
-        reglist.append("[\\w\\s]{1,100}");
-        reglist.append("[\\w\\s]{1,100}");
+        reglist << "\\d{1,6}"
+                << "[\\w\\s]{1,50}"
+                << "[\\w\\s]{1,50}"
+                << "\\d{1,3}"
+                << "[\\w\\s]{1,100}"
+                << "[\\w\\s]{1,100}";
         break;
     case GROUP:{
         /// подготовка модели данных записи (атрибут, значение)
@@ -494,7 +500,7 @@ void MainWindow::edit_records()                                                 
                                      "ORDER BY idspeciality");
         QList<QPair<QString,QVariant> > attrlist;                               /// список атр+знач для установки текущей строки в таблице
         attrlist.append(qMakePair(QString("idspeciality"),
-                                  query->value("speciality") ));                /// строка быдет выбрана по значению атрибута speciality
+                                  query->value("speciality") ));                /// строка будет выбрана по значению атрибута speciality
         if(!subtableviewer->setCurrentRow(attrlist)){
             /// ОШИБКА, ЗАПИСЬ НЕ НАЙДЕНА
             return ;
@@ -509,19 +515,19 @@ void MainWindow::edit_records()                                                 
         recordmodel.modelAddRow("Бюджет",          query->value("budget"));
         recordmodel.modelAddRow("Курс",            query->value("course"));
         /// подготовка списка регулярных выражений для валидатора
-        reglist.append("\\d{0,6}");
-        reglist.append("[\\w\\s]{0,50}");
-        reglist.append("[\\w\\s]{0,50}");
-        reglist.append("\\d{0,3}");
-        reglist.append("[\\w\\s]{0,100}");
-        reglist.append("[\\w\\s]{0,100}");
+        reglist << "\\d{0,6}"
+                << "[\\w\\s]{0,50}"
+                << "[\\w\\s]{0,50}"
+                << "\\d{0,3}"
+                << "[\\w\\s]{0,100}"
+                << "[\\w\\s]{0,100}";
         break;
     }
     }
     dlgrecordedit.setModel(&recordmodel, &reglist, &tableattributelist);
 
+    this->clearFocus();
     dlgrecordedit.exec();
-    dlgrecordedit.setFocus();
 
 
     //удаление временных данных
@@ -530,6 +536,10 @@ void MainWindow::edit_records()                                                 
         delete i.value();
         ++i;
     }
+
+    /// ОБНОВИТЬ текущую таблицу!!!!
+
+
     tableattributelist.clear();
     query->first();
 }

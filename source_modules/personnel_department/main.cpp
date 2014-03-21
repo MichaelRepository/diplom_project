@@ -6,10 +6,11 @@
 
 int main(int argc, char *argv[])
 {
+    /// загрузка библиотек
     QLibrary qsqlmysql("../../../files/box_library_5.2.1/sqldrivers/qsqlmysql.dll");
     QLibrary libmysql ("../../../files/box_library_5.2.1/libmysql.dll");
-    if (!qsqlmysql.load()) qDebug() << qsqlmysql.errorString();
-    if (!libmysql.load())  qDebug() << libmysql.errorString();
+    qDebug() << qsqlmysql.load();
+    qDebug() << libmysql.load();
 
     QApplication a(argc, argv);
 

@@ -70,36 +70,38 @@ private:
  /// параметры
     Ui::MainWindow *ui;
 
-    QSplashScreen*  splashwindow;                                               /// загрузочный экран
-    QSettings*      setting;                                                    /// запись/чтение параметров приложения
-
-    DialogEditRecord    dlgrecordedit;
-    AuthorizDlg         authorizedlg;
-    MessDlg             messdlg;
-    dbMessDlg           dbmessdlg;
-
-    SubTableWidget*     subtablewidget;
-
-    QLabel*         Status_label;                                               /// используется для создания отступа
-    QLabel*         Status_label_curtable;                                      /// отображает название активной таблицы
-    QLabel*         Status_label_count_rows;                                    /// отображает число строк в активной таблице
-    QLabel*         Status_label_count_selected;                                /// отображает число выделенных строк
-    QLineEdit*      Status_search_edit;                                         /// поле быстрого поиска
-
-                                                                                /// Элементы контекстного меню таблицы
-    QAction*        Table_record_edit;
-    QAction*        Table_record_add;
-    QAction*        Table_record_remove;
-
+    QSplashScreen*          splashwindow;                                       /// загрузочный экран
+    /// дополнительные окна
+    DialogEditRecord        dlgrecordedit;                                      /// редактор записи
+    AuthorizDlg             authorizedlg;                                       /// авторизационное окно
+    MessDlg                 messdlg;                                            /// диалог для вывода сообщения системы
+    dbMessDlg               dbmessdlg;                                          /// диалог для вывода сообщеня БД
+    SubTableWidget*         subtablewidget;                                     /// окно подтаблицы
+    /// элементы статусбара
+    QLabel*                 Status_label;                                       /// используется для создания отступа
+    QLabel*                 Status_label_curtable;                              /// отображает название активной таблицы
+    QLabel*                 Status_label_count_rows;                            /// отображает число строк в активной таблице
+    QLabel*                 Status_label_count_selected;                        /// отображает число выделенных строк
+    QLineEdit*              Status_search_edit;                                 /// поле быстрого поиска
+    /// Элементы контекстного меню таблицы
+    QAction*                Table_record_edit;
+    QAction*                Table_record_add;
+    QAction*                Table_record_remove;
+    /// объекты для работы с СУБД
     QSqlQuery*              query;                                              /// текущий запрос к СУБД
-    QSqlQueryModel*         querymodel;                                         /// модель данных
+    QSqlQueryModel*         querymodel;                                         /// модель данных запроса
     QSpreadsheetHeaderView* header;                                             /// заголовок таблицы (вьювера)
+    /// служебные параметры и объекты
+    int                     userid;                                             /// идентификатор пользователя
+    QString                 connectionname;                                     /// имя для получения подключения к СУБД
+    Tables                  currenttable;                                       /// активная таблица
+    QString                 currentfilter;                                      /// активный фильтр
+    bool                    filterchecked;                                      /// флаг фильтра (активен/неактивен)
+    /// ОБНОВЛЕНИЕ
+   // QString
 
-    int     userid;                                                             /// идентификатор пользователя
-    QString connectionname;                                                     /// имя для получения подключения к СУБД
-    Tables  currenttable;                                                       /// активная таблица
-    QString currentfilter;                                                      /// активный фильтр
-    bool    filterchecked;                                                      /// флаг фильтра (активен/неактивен)
+    QSettings*              setting;                                            /// запись/чтение параметров приложения
+
 };
 
 #endif // MAINWINDOW_H

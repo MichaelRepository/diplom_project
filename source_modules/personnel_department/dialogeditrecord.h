@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include <QDate>
+#include <QSql>
 
 #include "editrecordmodel.h"
 #include "recorddelegate.h"
@@ -25,7 +26,7 @@ public:
                   QList<QString>* regexplist = 0,                               /// передать список рег выражений валидаторам
                   QMap<QString, SubTableWidget *> *tableattributelist  = 0);    /// передать список атрибутов, являющихся субтаблицами
 
-
+    void showEvent(QShowEvent *event);
 private:
     Ui::DialogEditRecord *ui;
     EditRecordModel* recordmodel;                                               /// модель данных для одной записи
