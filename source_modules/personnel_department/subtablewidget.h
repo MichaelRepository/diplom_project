@@ -32,7 +32,7 @@ public:
     void ExecSqlQuery(SubTable table,    int keyvalue);                         /// установить параметры (подтаблица,   значение ключа)     запроса (отобразить зависимую таблицу)
     void ExecSqlQuery(QString  sqlstring);                                      /// установить параметры (текст запрос) запроса (отобразить результат запроса)
     void setHeadersNameList(QStringList &namelist);                             /// установить список имен заголовка таблицы
-    void setDefaultAttributesList(QStringList  &list);                          /// установить список атрибутов группы "по умолчанию"
+    void setDisplayedField(QString field);                                      /// установить атрибут, значение которого отображается в редакторе
     bool setCurrentRow(int row);                                                /// установить номер текущей строки
     bool setCurrentRow(QList< QPair <QString, QVariant> > &searchoption);       /// поиск записи в запросе по значениям атрибутов и установка номера записи в качестве текущей
 
@@ -44,7 +44,7 @@ public:
                         );
 
     QVariant     getCurRecordAttributeValue(QString attribute);                 /// получить значение атрибута текущей записи
-    QVariantList getDefaultAttributesValue();                                   /// получить значения атрибутов, относящихся к группе "по умолчанию"
+    QVariant     getDisplayedFieldValue();                                      /// получить значения атрибута DisplayedField
 
     int findRecordByAttributeList(QList<QPair<QString, QVariant> > &attrlist);  /// поиск записи по списку значений атрибутов
 
@@ -59,7 +59,7 @@ private slots:
 
 private:
     void applyTableHeaders();                                                   /// применить ранее установленные заголовки
-    void applyCurrentRow();                                            /// спозиционироваться на указанную строку
+    void applyCurrentRow();                                                     /// спозиционироваться на указанную строку
 
     Ui::SubTableWidget *ui;
     QStatusBar*         statusbar;
@@ -71,10 +71,10 @@ private:
     dbMessDlg*              dbmess;                                             /// сообщение об ошибках СУБД
     QSqlQueryModel*         model;                                              /// модель данных из запроса
 
-    SubTable                subtable;                                           /// текущая подтаблица
+    SubTable                subtable;                                           /// текущая таблица
     int                     currentrow;                                         /// текущая строка(запись) таблицы
     QStringList             headernamelist;                                     /// список заголовков таблицы
-    QStringList             defaultattributes;                                  /// список атрибутов - по умолчанию
+    QString                 displayedfield;                                     /// имя атрибута значение которого будет отображено в редакторе
 };
 
 #endif // SUBTABLEWIDGET_H

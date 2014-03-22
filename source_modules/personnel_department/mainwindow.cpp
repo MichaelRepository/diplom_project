@@ -257,7 +257,7 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode,
                            "subject.name, "
                            "subject.patronymic, "
                            "subject.sex, "
-                           "groups.name, "
+                           "groups.name AS groupname, "
                            "groups.course, "
                            "groups.form, "
                            "groups.budget, "
@@ -281,7 +281,7 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode,
                            "subject.name, "
                            "subject.patronymic, "
                            "subject.sex, "
-                           "groups.name, "
+                           "groups.name AS groupname, "
                            "groups.course, "
                            "groups.form, "
                            "groups.budget, "
@@ -456,7 +456,6 @@ void MainWindow::edit_records()                                                 
     QModelIndexList rowslist = ui->tableView->selectionModel()->selectedRows(0);/// получить список всех строк в которых выделен 0-й столбец
     if(rowslist.size() != 1) return ;                                           /// список содержит не одну строку -> завершить
     int row = rowslist[0].row();                                                /// получить номер выделенной строки
-    query->first();
     query->seek(row);
 
     EditRecordModel recordmodel;                                                /// модель данных для записи таблицы
@@ -482,32 +481,6 @@ void MainWindow::edit_records()                                                 
         break;
     case GROUP:{
         /// подготовка модели данных записи (атрибут, значение)
-        /// получение списка всех существующих специальностей  в виде подтаблицы
-        SubTableWidget* subtableviewer = new SubTableWidget(connectionname);    /// создается виджет для отображения субтаблицы
-        QStringList headerlist;                                                 /// список заголовков таблицы
-        QStringList defaultattribute;                                           /// список атрибутов, выводимых в редакторе строки
-        headerlist << "Шифр"
-                   << "Аббревиатура";
-        defaultattribute << "idspeciality"
-                         << "abbreviation";
-        subtableviewer->setHeadersNameList(headerlist);                         /// установлен список заголовков
-        subtableviewer->setDefaultAttributesList(defaultattribute);             /// установлен список атрибутов - по умолчанию
-        /// передача текста запроса
-        subtableviewer->ExecSqlQuery("SELECT "
-                                     "idspeciality, "
-                                     "abbreviation "
-                                     "FROM speciality "
-                                     "ORDER BY idspeciality");
-        QList<QPair<QString,QVariant> > attrlist;                               /// список атр+знач для установки текущей строки в таблице
-        attrlist.append(qMakePair(QString("idspeciality"),
-                                  query->value("speciality") ));                /// строка будет выбрана по значению атрибута speciality
-        if(!subtableviewer->setCurrentRow(attrlist)){
-            /// ОШИБКА, ЗАПИСЬ НЕ НАЙДЕНА
-            return ;
-        }
-
-        tableattributelist.insert("Специальность", subtableviewer);             /// атрибут "Специальность" добавлена в список атриб, отображающихся в виде таблицы
-
         recordmodel.modelAddRow("Специальность",   query->value("speciality"));
         recordmodel.modelAddRow("Наименование",    query->value("name"));
         recordmodel.modelAddRow("Год создания",    query->value("yearformation"));
@@ -521,6 +494,113 @@ void MainWindow::edit_records()                                                 
                 << "\\d{0,3}"
                 << "[\\w\\s]{0,100}"
                 << "[\\w\\s]{0,100}";
+
+
+        /// создание вьювера для внешней таблицы
+        SubTableWidget* subtableviewer = new SubTableWidget(connectionname);    /// создается виджет для отображения субтаблицы
+        QStringList headerlist;                                                 /// список заголовков таблицы
+        headerlist << "Шифр"
+                   << "Аббревиатура";
+        subtableviewer->setHeadersNameList(headerlist);                         /// установлен список заголовков
+        subtableviewer->setDisplayedField("idspeciality");                      /// отображать в редакторе шифр специальности
+        /// выполнение запроса для внешней таблицы
+        subtableviewer->ExecSqlQuery("SELECT "
+                                        "idspeciality, "
+                                        "abbreviation "
+                                     "FROM "
+                                        "speciality "
+                                     "ORDER BY "
+                                        "idspeciality");
+        /// позиционирование на текущую строку во внешней таблице по списку атр+знач
+        QList<QPair<QString,QVariant> > attrlist;
+        /// строка будет выбрана по значению атрибута speciality
+        attrlist.append(qMakePair(QString("idspeciality"), query->value("speciality") ));
+        if(!subtableviewer->setCurrentRow(attrlist)){
+            messdlg.settitl("Ошибка");
+            messdlg.settext("Не возможно обратиться к записи в таблице Группы");
+            return ;
+        }
+
+        /// формирование списка атрибутов - ссылок на таблицы для редактора
+        tableattributelist.insert("Специальность", subtableviewer);             /// специальность - ссылка на таблицу специальности
+
+        break;
+    }
+    case STUDENT:{
+        QSqlDatabase db = QSqlDatabase::database(connectionname);
+        if(!db.open()){
+            dbmessdlg.showdbmess(db.lastError());
+            return ;
+        }
+
+        /// сохраняю идентификатор группы
+        recordmodel.modelAddRow("Номер зачетки",    query->value("numbertestbook"));
+        recordmodel.modelAddRow("Фамилия",          query->value("surname"));
+        recordmodel.modelAddRow("Имя",              query->value("name"));
+        recordmodel.modelAddRow("Отчество",         query->value("patronymic"));
+        recordmodel.modelAddRow("Пол",              query->value("sex"));
+        recordmodel.modelAddRow("Группа",           query->value("groupname"));
+        recordmodel.modelAddRow("Дата рождения",    query->value("datebirth"));
+        recordmodel.modelAddRow("Место рождения",   query->value("placebirth"));
+
+        /// подготовка списка регулярных выражений для валидатора
+        reglist << ""
+                << ""
+                << ""
+                << ""
+                << ""
+                << "";
+
+        /// создание вьювера для таблицы группы
+        SubTableWidget *grouptableviewer = new SubTableWidget(connectionname);
+        QStringList headerlist;
+        headerlist  << "#"
+                    << "Специальность"
+                    << "Наименование"
+                    << "Год формирования"
+                    << "Форма обуч."
+                    << "Бюджет"
+                    << "Курс";
+        grouptableviewer->setHeadersNameList(headerlist);
+        grouptableviewer->setDisplayedField("name");
+        grouptableviewer->ExecSqlQuery("SELECT "
+                                           "groups.idgroup, "
+                                           "speciality.name AS specname, "
+                                           "groups.name, "
+                                           "groups.yearformation, "
+                                           "groups.form, "
+                                           "groups.budget, "
+                                           "groups.course "
+                                       "FROM "
+                                           "groups, "
+                                           "speciality "
+                                       "WHERE speciality.idspeciality = groups.speciality "
+                                       "ORDER BY idgroup");
+        /// позиционирование на текущую строку во внешней таблице по списку атр+знач
+        QList<QPair<QString,QVariant> > attrlist;
+        /// строка будет выбрана по значению атрибута idgroup
+        /// получение номера группы в которой обучается студент
+        QSqlQuery queryforgroup(db);
+        queryforgroup.prepare("SELECT "
+                                "student.group "
+                              "FROM "
+                                "student "
+                              "WHERE subject = :id");
+        queryforgroup.bindValue(":id",query->value("subject"));
+        if(!queryforgroup.exec()){
+            dbmessdlg.showdbmess(queryforgroup.lastError());
+            return ;
+        }
+        queryforgroup.first();
+        attrlist.append(qMakePair(QString("idgroup"), queryforgroup.value("group") ));
+        if(!grouptableviewer->setCurrentRow(attrlist)){
+            messdlg.settitl("Ошибка");
+            messdlg.settext("Не возможно обратиться к записи в таблице Группы");
+            return ;
+        }
+
+        grouptableviewer->findRecordByAttributeList(attrlist);
+        tableattributelist.insert("Группа",grouptableviewer);
         break;
     }
     }

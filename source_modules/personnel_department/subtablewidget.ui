@@ -62,21 +62,6 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
-      <item row="0" column="0">
-       <widget class="QLabel" name="label">
-        <property name="styleSheet">
-         <string notr="true">color: rgb(170, 255, 127);
-background: #2C3033;
-padding:5px;
-margin-right:-1;
-border:1px solid #2C3033;
-border-right:25x solid #2C3033;</string>
-        </property>
-        <property name="text">
-         <string>table-&gt;subtable</string>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0">
        <widget class="QFrame" name="toolsframe">
         <property name="minimumSize">
@@ -283,13 +268,6 @@ border-right:25x solid #2C3033;</string>
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="Line" name="line">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-       </widget>
-      </item>
-      <item row="3" column="0">
        <widget class="QTableView" name="tableView">
         <property name="styleSheet">
          <string notr="true"/>
@@ -315,6 +293,21 @@ border-right:25x solid #2C3033;</string>
         <attribute name="verticalHeaderHighlightSections">
          <bool>false</bool>
         </attribute>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="styleSheet">
+         <string notr="true">color: rgb(170, 255, 127);
+background: #2C3033;
+padding:5px;
+margin-right:-1;
+border:1px solid #2C3033;
+border-right:25x solid #2C3033;</string>
+        </property>
+        <property name="text">
+         <string>table-&gt;subtable</string>
+        </property>
        </widget>
       </item>
      </layout>

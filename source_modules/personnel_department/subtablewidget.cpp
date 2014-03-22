@@ -206,7 +206,7 @@ void SubTableWidget::ExecSqlQuery(SubTable table, int keyvalue)
     }
 
     applyTableHeaders();                                                        /// применить заголовки таблицы
-
+    ui->tableView->setModel(model);
     ui->tableView->resizeColumnsToContents();
     ui->tableView->resizeRowsToContents();
 
@@ -217,16 +217,23 @@ void SubTableWidget::ExecSqlQuery(SubTable table, int keyvalue)
 
 void SubTableWidget::ExecSqlQuery(QString sqlstring)
 {
-    model->query().finish();
+    model->clear();
     QSqlDatabase db = QSqlDatabase::database(curconnectname);
+    if(!db.open()){
+        dbmess->showdbmess(db.lastError());
+    }
     QSqlQuery query(db);
     query.exec(sqlstring);
     model->setQuery(query);
     if(model->lastError().isValid()){
-        dbmess->showdbmess(db.lastError());
+        dbmess->showdbmess(model->lastError());
     }
 
-    applyTableHeaders();                                                        /// применить заголовки таблицы
+    applyTableHeaders();
+    ui->tableView->setModel(model);
+    ui->tableView->resizeColumnsToContents();
+    ui->tableView->resizeRowsToContents();
+
 
     currentrow = 0;
 }
@@ -236,9 +243,9 @@ void SubTableWidget::setHeadersNameList(QStringList &namelist)
     headernamelist = namelist;
 }
 
-void SubTableWidget::setDefaultAttributesList(QStringList &list)
+void SubTableWidget::setDisplayedField(QString field)
 {
-    defaultattributes = list;
+    displayedfield = field;
 }
 
 bool SubTableWidget::setCurrentRow(int row)
@@ -277,6 +284,9 @@ void SubTableWidget::setDisplayMode(bool titleVisible,
         QHeaderView *header = new QHeaderView(Qt::Horizontal,this);
         header->setFocusPolicy(Qt::NoFocus);
         ui->tableView->setHorizontalHeader(header);
+
+        ui->tableView->resizeColumnsToContents();
+        ui->tableView->resizeRowsToContents();
     }
     QString style = "QAbstractItemView:item::selected{color:#fff;background-color: #3399FF;}";
 
@@ -289,14 +299,13 @@ QVariant SubTableWidget::getCurRecordAttributeValue(QString attribute)
     return model->record(currentrow).value(attribute);
 }
 
-QVariantList SubTableWidget::getDefaultAttributesValue()
+QVariant SubTableWidget::getDisplayedFieldValue()
 {
-    QVariantList resultlist;
+    QVariant result;
     if (model->query().isValid() )
-    for(int i = 0; i < defaultattributes.size(); i++)
-        resultlist << model->record(currentrow).value(defaultattributes.at(i));
+    result = model->record(currentrow).value(displayedfield);
 
-    return resultlist;
+    return result;
 }
 
 int SubTableWidget::findRecordByAttributeList(QList<QPair<QString, QVariant> > &attrlist)
@@ -364,7 +373,7 @@ void SubTableWidget::applyTableHeaders()
 {
     /// установка заголовков таблицы
     for(int i = 0; i < headernamelist.size(); ++i)
-        ui->tableView->model()->setHeaderData(i, Qt::Horizontal, headernamelist.at(i) );
+        model->setHeaderData(i, Qt::Horizontal, headernamelist.at(i) );
 }
 
 void SubTableWidget::applyCurrentRow()

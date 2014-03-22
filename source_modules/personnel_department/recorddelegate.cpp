@@ -73,8 +73,8 @@ void RecordDelegate::setEditorData(QWidget *editor,
        tableattributelist->contains(curatribut)){
         DelegatButton *button = static_cast<DelegatButton*>(editor);
         SubTableWidget *subtabledlg = tableattributelist->value(curatribut);
-        QVariantList list = subtabledlg->getDefaultAttributesValue();
-        if(list.at(0).isValid()) button->setText(list.at(0).toString());
+        QVariant value = subtabledlg->getDisplayedFieldValue();
+        button->setText(value.toString());
         return ;
     }
 

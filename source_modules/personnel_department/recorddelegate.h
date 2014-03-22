@@ -49,8 +49,8 @@ public:
         subtableshov = false;
     }
     void updateDate(){                                                          /// перезаполучить данные у виджета субтаблицы
-        QVariantList list = subtabledlg->getDefaultAttributesValue();
-        this->setText(list.at(0).toString());
+        QVariant value = subtabledlg->getDisplayedFieldValue();
+        this->setText(value.toString());
     }
     void mouseReleaseEvent(QMouseEvent * event){                                /// отобразить виджет субтаблицы при отпускани кнопки
         showSubtable();
