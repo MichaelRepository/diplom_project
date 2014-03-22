@@ -92,6 +92,89 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+void MainWindow::initTables()
+{
+    QStringList headerList;
+/// подготовить таблицу - специальности
+    specialitytable.setConnectionName(connectionname);
+    specialitytable.setSelect ("SELECT * FROM speciality ");
+    specialitytable.setWhere  ("");
+    specialitytable.setOrderBy("ORDER BY idspeciality");
+    headerList << "Шифр"
+               << "Аббревиатура"
+               << "Наименование"
+               << "Период обучения"
+               << "Базируется на"
+               << "Специализация";
+    specialitytable.setAlterFieldsName(headerList);
+    headerList.clear();
+/// подготовить таблицу - группы
+    grouptable.setConnectionName(connectionname);
+    grouptable.setSelect ("SELECT * FROM groups ");
+    grouptable.setWhere  ("WHERE speciality = ? ");
+    grouptable.setOrderBy("ORDER BY idgroup");
+    headerList << "Номер"
+               << "Специальность"
+               << "Наименование"
+               << "Год формирования"
+               << "Форма обучения"
+               << "Бюджет"
+               << "Курс";
+    grouptable.setAlterFieldsName(headerList);
+    headerList.clear();
+/// подготовить таблицу - студенты
+    studenttable.setConnectionName(connectionname);
+    studenttable.setSelect("SELECT "
+                           "student.subject, "
+                           "student.numbertestbook, "
+                           "subject.surname, "
+                           "subject.name, "
+                           "subject.patronymic, "
+                           "subject.sex, "
+                           "groups.name AS groupname, "
+                           "groups.course, "
+                           "groups.form, "
+                           "groups.budget, "
+                           "subject.datebirth, "
+                           "subject.placebirth, "
+                           "'...' AS citizenship, "
+                           "'...' AS residence, "
+                           "'...' AS passports, "
+                           "'...' AS represent, "
+                           "'...' AS education, "
+                           "'...' AS privileges, "
+                           "'...' AS moreinf "
+                           "FROM student "
+                           "LEFT JOIN groups  ON (student.group = groups.idgroup) "
+                           "LEFT JOIN subject ON (student.subject = subject.idsubject) "
+                           );
+    studenttable.setWhere("WHERE student.group = ?");
+    headerList << "#"
+               << "Номер зачетки"
+               << "Фамилия"
+               << "Имя"
+               << "Отчество"
+               << "Пол"
+               << "Группа"
+               << "Курс"
+               << "Форма обучения"
+               << "Бюджет"
+               << "Дата рождения"
+               << "Место рождения"
+               << "Гражданство"
+               << "Проживание"
+               << "Паспорт"
+               << "Представители"
+               << "Образование"
+               << "Льготы"
+               << "Дополнительно";
+    studenttable.setAlterFieldsName(headerList);
+
+    /// ВАЖНО - установка глобальной таблицы
+    globaltable = &specialitytable;
+
+}
+
 void MainWindow::init_sys()
 {
     /// создание загрузочного окна
@@ -155,7 +238,8 @@ void MainWindow::init_sys()
                       this,                            &MainWindow::tableView_items_selected);
 
 
-    set_current_table(SPECIALITY, BUTTONMODE, 0);                               /// установить текущую таблицу
+    initTables();                                                               /// ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ
+    set_current_table(SPECIALITY, BUTTONMODE);                                  /// установить текущую таблицу
 
     /// создание окна для отображения подтаблиц
     subtablewidget = new SubTableWidget(connectionname, this);                  /// установка флага - "контекстное меню", для диалога субтаблиц
@@ -199,6 +283,8 @@ void MainWindow::refresh_menu()
     /// определить число выделенных записей активной таблицы
     int countselectedrows = ui->tableView->selectionModel()->selectedRows().size();
     bool state = (countselectedrows == 1);
+    //УСТАНОВИТЬ ТЕКУЩУЮ СТРОКУ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
+    if(state) globaltable->setCurrentRow(ui->tableView->selectionModel()->selectedRows().first().row());
     /// переключить состояние кнопок и элементов контекстного меню, зависимых от числа выделенных записей
     ui->Edit_button1->setEnabled(state);
     Table_record_edit->setEnabled(state);
@@ -208,139 +294,53 @@ void MainWindow::refresh_menu()
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
 }
 
-void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode,
-                                   int keyvalue)
+void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
 {
-    query->finish();                                                            /// сбросить предыдущий результат запроса
-    querymodel->clear();                                                        /// очистить модель данных запроса
     /// формирование запросов, относительно текущей таблицы
-    QStringList headerList;                                                     /// список заголовков таблицы
     switch(table){
     case SPECIALITY:
-        if(mode == BUTTONMODE) query->prepare("SELECT * "
-                                              "FROM speciality "
-                                              "ORDER BY idspeciality");
-        else return;
-        headerList << "Шифр"
-                   << "Аббревиатура"
-                   << "Наименование"
-                   << "Период обучения"
-                   << "Базируется на"
-                   << "Специализация";
+        specialitytable.execQuery(true,false,false,true);
+        globaltable = &specialitytable;
         break;
-    case GROUP:
+    case GROUP:       
         if(mode == BUTTONMODE)
-            query->prepare("SELECT * "
-                           "FROM groups "
-                           "ORDER BY idgroup");
+            grouptable.execQuery(true,false,false,true);
         else{
-            query->prepare("SELECT * "
-                           "FROM groups "
-                           "WHERE speciality = :id "
-                           "ORDER BY idgroup");
-            query->bindValue(":id",keyvalue);
+            QVariantList bindvalues;
+            /* можно и так сделать
+            grouptable.setWhere("WHERE speciality = ? ");
+            */
+            bindvalues << specialitytable.getCurrentRecordFieldValue("idspeciality");
+            grouptable.bindValues(bindvalues);
+            grouptable.execQuery(true,true,false,true);
         }
-        headerList << "Номер"
-                   << "Специальность"
-                   << "Наименование"
-                   << "Год формирования"
-                   << "Форма обучения"
-                   << "Бюджет"
-                   << "Курс";
+        globaltable = &grouptable;
         break;
     case STUDENT:
         if(mode == BUTTONMODE)
-            query->prepare("SELECT "
-                           "student.subject, "
-                           "student.numbertestbook, "
-                           "subject.surname, "
-                           "subject.name, "
-                           "subject.patronymic, "
-                           "subject.sex, "
-                           "groups.name AS groupname, "
-                           "groups.course, "
-                           "groups.form, "
-                           "groups.budget, "
-                           "subject.datebirth, "
-                           "subject.placebirth, "
-                           "'...' AS citizenship, "
-                           "'...' AS residence, "
-                           "'...' AS passports, "
-                           "'...' AS represent, "
-                           "'...' AS education, "
-                           "'...' AS privileges, "
-                           "'...' AS moreinf "
-                           "FROM student "
-                           "LEFT JOIN groups  ON (student.group = groups.idgroup) "
-                           "LEFT JOIN subject ON (student.subject = subject.idsubject) ");
+            studenttable.execQuery(true,false,false,true);
         else{
-            query->prepare("SELECT "
-                           "student.subject, "
-                           "student.numbertestbook, "
-                           "subject.surname, "
-                           "subject.name, "
-                           "subject.patronymic, "
-                           "subject.sex, "
-                           "groups.name AS groupname, "
-                           "groups.course, "
-                           "groups.form, "
-                           "groups.budget, "
-                           "subject.datebirth, "
-                           "subject.placebirth, "
-                           "'...' AS citizenship, "
-                           "'...' AS residence, "
-                           "'...' AS passports, "
-                           "'...' AS represent, "
-                           "'...' AS education, "
-                           "'...' AS privileges, "
-                           "'...' AS moreinf "
-                           "FROM student "
-                           "LEFT JOIN groups  ON (student.group = groups.idgroup) "
-                           "LEFT JOIN subject ON (student.subject = subject.idsubject) "
-                           "WHERE student.group = :id");
-            query->bindValue(":id",keyvalue);
+            QVariantList bindvalues;
+            /* можно и так сделать
+            grouptable.setWhere("WHERE student.group = ?");
+            */
+            bindvalues << grouptable.getCurrentRecordFieldValue("idgroup");
+            studenttable.bindValues(bindvalues);
+            studenttable.execQuery(true,true,false,true);
         }
-        headerList << "#"
-                   << "Номер зачетки"
-                   << "Фамилия"
-                   << "Имя"
-                   << "Отчество"
-                   << "Пол"
-                   << "Группа"
-                   << "Курс"
-                   << "Форма обучения"
-                   << "Бюджет"
-                   << "Дата рождения"
-                   << "Место рождения"
-                   << "Гражданство"
-                   << "Проживание"
-                   << "Паспорт"
-                   << "Представители"
-                   << "Образование"
-                   << "Льготы"
-                   << "Дополнительно";
+        globaltable = &studenttable;
         break;
     }
 
-    if(!query->exec())                                                          /// выполнить запрос
-    {
-        dbmessdlg.showdbmess(query->lastError());
-        query->finish();
-        return ;
-    }
     currenttable = table;
-    querymodel->setQuery(*query);                                               /// связать модель с запросом
-                                                                                /// подпись заголовков таблицы
 
-    for(int i = 0; i < headerList.size(); ++i)
-        ui->tableView->model()->setHeaderData(i,Qt::Horizontal,headerList.at(i));
+    globaltable->displayTable(ui->tableView);
+    globaltable->setCurrentRow(-1);
+    globaltable->displayTable(ui->tableView);
 
-    ui->tableView->resizeColumnsToContents();
-    ui->tableView->resizeRowsToContents();
-
-    if(table == STUDENT)
+    /*if(table == STUDENT)
          header->hideSection(0);
-    else header->showSection(0);
+    else header->showSection(0);*/
 
     refresh_menu();
 }
@@ -349,47 +349,40 @@ void MainWindow::on_tableView_doubleClicked(const QModelIndex &index)
 {
     if(!index.isValid() || currenttable == STUDENT)
         return ;
-
-    int id = 0;
     Tables nexttable;
 
-    if(!query->seek(index.row(),false))                                         /// позиционирование на необходимой записи
-        return ;
+    //УСТАНОВИТЬ ВЫДЕЛЕННУЮ СТРОКУ КАК ТЕКУЩУЮ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
+    globaltable->setCurrentRow(ui->tableView->selectionModel()->selectedRows().first().row());
 
     switch(currenttable){
-    case SPECIALITY:
-        nexttable = GROUP;
-        id = query->value("idspeciality").toInt();
+    case SPECIALITY: nexttable = GROUP;
         break;
-    case GROUP:
-        nexttable = STUDENT;
-        id = query->value("idgroup").toInt();
+    case GROUP: nexttable = STUDENT;
         break;
     }
 
-    set_current_table(nexttable, MOUSEMODE, id);                                /// переключение таблиц
+    set_current_table(nexttable, MOUSEMODE);                                    /// переключение таблиц
 }
 
 void MainWindow::on_Switch_table_spec_button_clicked()
 {
-    set_current_table(SPECIALITY, BUTTONMODE, 0);
+    set_current_table(SPECIALITY, BUTTONMODE);
 }
 
 void MainWindow::on_Switch_table_group_button_clicked()
 {
-    set_current_table(GROUP, BUTTONMODE, 0);
+    set_current_table(GROUP, BUTTONMODE);
 }
 
 void MainWindow::on_Switch_table_stud_button_clicked()
 {
-    set_current_table(STUDENT, BUTTONMODE, 0);
+    set_current_table(STUDENT, BUTTONMODE);
 }
 
 void MainWindow::on_tableView_clicked(const QModelIndex &index)
 {
     if(currenttable != STUDENT)   return ;                                      /// только для таблицы студенты
     if(index.column() < 12)       return ;                                      /// только для 12-19 столбцов таблицы
-    if(!query->seek(index.row())) return ;                                      /// спозиционироваться на нужную строку
 
     int idsubject = query->value("subject").toInt();
 

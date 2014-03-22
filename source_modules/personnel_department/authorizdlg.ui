@@ -164,10 +164,10 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>authorizbt</tabstop>
-  <tabstop>cancelbt</tabstop>
   <tabstop>lineEdit</tabstop>
   <tabstop>lineEdit_2</tabstop>
+  <tabstop>authorizbt</tabstop>
+  <tabstop>cancelbt</tabstop>
   <tabstop>checkBox</tabstop>
  </tabstops>
  <resources/>
