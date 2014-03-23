@@ -7,7 +7,12 @@ EditRecordModel::EditRecordModel(QObject *parent) :
 
 EditRecordModel::~EditRecordModel()
 {
-    listmodel.clear();
+    recorddata.clear();
+}
+
+void EditRecordModel::setData(QSqlRecord &record)
+{
+    recorddata = record;
 }
 
 int EditRecordModel::columnCount(const QModelIndex &parent) const
@@ -19,22 +24,23 @@ int EditRecordModel::columnCount(const QModelIndex &parent) const
 int EditRecordModel::rowCount(const QModelIndex &parent) const
 {
     if(parent.isValid()) return 0;
-    return listmodel.size();
+    return recorddata.count();
 }
 
 QVariant EditRecordModel::data(const QModelIndex &index, int role) const
 {
-    if(!index.isValid() || index.row() < 0 || index.row() > listmodel.size())
+    if(!index.isValid() || index.row() > recorddata.count())
         return QVariant();
 
     switch(role)                                                                /// относительно роли индекса возвращается значение
     {
     case Qt::DisplayRole:
     case Qt::EditRole:{
+        if(recorddata.field(index.row()).value() =="...") return QVariant();    /// ОПРЕДЕЛЯЕТ КАКИЕ ПОЛЯ НЕ БУДУТ ОТОБРАЖАТЬСЯ В РЕДАКТОРЕ
         switch(index.column())
         {
-        case 0: return listmodel[index.row()].first;                            /// название атрибута
-        case 1: return listmodel[index.row()].second;                           /// значение атрибута
+        case 0: return recorddata.field(index.row()).name();                    /// название атрибута
+        case 1: return recorddata.field(index.row()).value();                   /// значение атрибута
         default: return QVariant();
         }
     }
@@ -52,7 +58,7 @@ bool EditRecordModel::setData(const QModelIndex &index, const QVariant &value, i
 {
     if(!index.isValid() || role != Qt::EditRole) return false;
 
-    listmodel[index.row()].second = value;
+    recorddata.field(index.row()).setValue(value);
     return true;
 }
 
@@ -86,15 +92,4 @@ Qt::ItemFlags EditRecordModel::flags(const QModelIndex &index) const
     }
 
     return theFlags;
-}
-
-void EditRecordModel::modelAddRow(QString key, QVariant value)
-{
-    listmodel.append( qMakePair(key, value) );
-}
-
-QVariant EditRecordModel::getValue(int row)
-{
-    if(row>0 && row<listmodel.size()) return listmodel[row].second;
-    return QVariant();
 }

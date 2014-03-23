@@ -27,7 +27,6 @@
 #include "messdlg.h"
 #include "subtablewidget.h"
 
-#include <QComboBox>
 #include <QPushButton>
 #include <QTableView>
 #include <QWidget>
@@ -39,15 +38,12 @@ class DelegatButton : public QPushButton
 {
     Q_OBJECT
 public:
-    DelegatButton(QWidget *parent):QPushButton(parent){ subtableshov = false; }
-
-    void setSubTableDialog(SubTableWidget *dlg){                                /// получить виджет для субтаблицы
-        subtabledlg = dlg;
-        /// организовать реакцию кнопки на выбор строки в субтаблице
+    DelegatButton(QWidget *parent):QPushButton(parent){
+        subtabledlg = new SubTableWidget(this);
         QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
                          this,        &DelegatButton::update);
-        subtableshov = false;
     }
+// ЗДЕСЬ //
     void updateDate(){                                                          /// перезаполучить данные у виджета субтаблицы
         QVariant value = subtabledlg->getDisplayedFieldValue();
         this->setText(value.toString());

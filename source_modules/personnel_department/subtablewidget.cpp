@@ -1,49 +1,97 @@
 #include "subtablewidget.h"
 #include "ui_subtablewidget.h"
 
-SubTableWidget::SubTableWidget(QString connectname, QWidget *parent) :
+SubTableWidget::SubTableWidget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::SubTableWidget)
 {
     ui->setupUi(this);
-    curconnectname = connectname;
 
     statusbar = new QStatusBar(this);
+    header    = new QSpreadsheetHeaderView(Qt::Horizontal,this);
+    movable   = true;                                                           /// разрешить перемещение окна
 
     QLayout* layoutWidget = ui->gridLayout_2;
     layoutWidget->setContentsMargins(0,0,0,0);
     layoutWidget->setSpacing(0);
     layoutWidget->addWidget(statusbar);
-
-    dbmess = new dbMessDlg(this);
-
-    QSqlDatabase db = QSqlDatabase::database(connectname);
-    if(!db.open() || !db.isValid()){                                            /// КРИТИЧНОЕ МЕСТО (решено)
-        dbmess->showdbmess(db.lastError());
-        exit(0);                                                                /// решено закрытием приложения
-    }
-    /// создание объектов для обработки и визуализации данных,
-    /// получаемых SQL запросом
-    header = new QSpreadsheetHeaderView(Qt::Horizontal,this);
-    dbmess = new dbMessDlg(this);
-    model  = new QSqlQueryModel(this);
-    ui->tableView->setHorizontalHeader(header);
-    ui->tableView->setModel(model);
-
-    movable = true;                                                             /// разрешить перемещение окна
-    currentrow = 0;                                                             /// текущая строка
 }
 
 SubTableWidget::~SubTableWidget()
 {
     delete ui;
 }
+
 void SubTableWidget::setTitleText(QString text)
 {
     ui->label->setText(text);
 }
 
-void SubTableWidget::ExecSqlQuery(SubTable table, int keyvalue)
+/*void SubTableWidget::setDisplayedField(QString field)
+{
+    displayedfield = field;
+}*/
+
+void SubTableWidget::setDisplayMode(bool titleVisible,
+                                    bool editbuttonpanelVisible,
+                                    bool headerMenuVisible,
+                                    bool dlgMovable,
+                                    Qt::FocusPolicy tablefocuspolicy)
+{
+    movable = dlgMovable;
+    ui->label->setVisible(titleVisible);
+    ui->toolsframe->setVisible(editbuttonpanelVisible);
+    ui->tableView->setFocusPolicy(tablefocuspolicy);
+    if(!headerMenuVisible){
+        QHeaderView *header = new QHeaderView(Qt::Horizontal,this);
+        header->setFocusPolicy(Qt::NoFocus);
+        ui->tableView->setHorizontalHeader(header);
+        ui->tableView->resizeColumnsToContents();
+        ui->tableView->resizeRowsToContents();
+    }
+    QString style = "QAbstractItemView:item::selected{color:#fff;background-color: #3399FF;}";
+
+    if(tablefocuspolicy == Qt::NoFocus) ui->tableView->setStyleSheet(style);
+}
+
+void SubTableWidget::mousePressEvent(QMouseEvent *event)
+{
+    QWidget::mousePressEvent(event);
+    if(!movable) return;
+    mpos = event->pos();
+}
+
+void SubTableWidget::mouseMoveEvent(QMouseEvent *event)
+{
+        QWidget::mouseMoveEvent(event);
+        if(!movable) return;
+        if (mpos.x() >= 0 && event->buttons() && Qt::LeftButton)
+        {
+            QPoint diff = event->pos() - mpos;
+            QPoint newpos = this->pos() + diff;
+
+            this->move(newpos);
+        }
+}
+
+void SubTableWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+        QWidget::mouseMoveEvent(event);
+        if(!movable) return;
+        /// очистить старое значение позиции нажатия мыши
+        mpos = QPoint(-1, -1);
+        QWidget::mouseReleaseEvent(event);
+}
+
+void SubTableWidget::on_tableView_clicked(const QModelIndex &index)
+{
+    //УСТАНОВИТЬ В ТАБЛИЦЕ ТЕКЩУЮ СТРОКУ
+    if(!index.isValid() || currentrow == index.row()) return ;
+    currentrow = index.row();
+    emit newrowselected();                                                      /// сообщить - новая строка выделена
+}
+
+/*void SubTableWidget::ExecSqlQuery(SubTable table, int keyvalue)
 {
     model->query().clear();                                                     /// очистка данных в запросе
     headernamelist.clear();                                                     /// очистка списка заголовков
@@ -179,9 +227,7 @@ void SubTableWidget::ExecSqlQuery(SubTable table, int keyvalue)
                        << "Дата выдачи"
                        << "Дополнительно";
         break;
-    /*case PROGRESS:
-        query->prepare("SELECT * FROM progress WHERE subject = :id");
-        break;*/
+
     case MOREINF:
         querystr =     "SELECT "
                            "idinf, "
@@ -214,176 +260,5 @@ void SubTableWidget::ExecSqlQuery(SubTable table, int keyvalue)
     currentrow = 0;
 
 }
-
-void SubTableWidget::ExecSqlQuery(QString sqlstring)
-{
-    model->clear();
-    QSqlDatabase db = QSqlDatabase::database(curconnectname);
-    if(!db.open()){
-        dbmess->showdbmess(db.lastError());
-    }
-    QSqlQuery query(db);
-    query.exec(sqlstring);
-    model->setQuery(query);
-    if(model->lastError().isValid()){
-        dbmess->showdbmess(model->lastError());
-    }
-
-    applyTableHeaders();
-    ui->tableView->setModel(model);
-    ui->tableView->resizeColumnsToContents();
-    ui->tableView->resizeRowsToContents();
-
-
-    currentrow = 0;
-}
-
-void SubTableWidget::setHeadersNameList(QStringList &namelist)
-{
-    headernamelist = namelist;
-}
-
-void SubTableWidget::setDisplayedField(QString field)
-{
-    displayedfield = field;
-}
-
-bool SubTableWidget::setCurrentRow(int row)
-{
-    if( model->query().isActive() && row < model->record().count() && row >= 0 ){
-        currentrow = row;
-        applyCurrentRow();
-        return true;
-    }
-    else return false;
-}
-
-bool SubTableWidget::setCurrentRow(QList<QPair<QString, QVariant> > &searchoption)
-{
-    int row = findRecordByAttributeList(searchoption);
-
-    if(row != -1){
-        currentrow = row;
-        applyCurrentRow();
-        return true;
-    }
-    else return false;
-}
-
-void SubTableWidget::setDisplayMode(bool titleVisible,
-                                    bool editbuttonpanelVisible,
-                                    bool headerMenuVisible,
-                                    bool dlgMovable,
-                                    Qt::FocusPolicy tablefocuspolicy)
-{
-    movable = dlgMovable;
-    ui->label->setVisible(titleVisible);
-    ui->toolsframe->setVisible(editbuttonpanelVisible);
-    ui->tableView->setFocusPolicy(tablefocuspolicy);
-    if(!headerMenuVisible){
-        QHeaderView *header = new QHeaderView(Qt::Horizontal,this);
-        header->setFocusPolicy(Qt::NoFocus);
-        ui->tableView->setHorizontalHeader(header);
-
-        ui->tableView->resizeColumnsToContents();
-        ui->tableView->resizeRowsToContents();
-    }
-    QString style = "QAbstractItemView:item::selected{color:#fff;background-color: #3399FF;}";
-
-    if(tablefocuspolicy == Qt::NoFocus) ui->tableView->setStyleSheet(style);
-}
-
-QVariant SubTableWidget::getCurRecordAttributeValue(QString attribute)
-{
-    if(!model->query().isValid()) return QVariant();
-    return model->record(currentrow).value(attribute);
-}
-
-QVariant SubTableWidget::getDisplayedFieldValue()
-{
-    QVariant result;
-    if (model->query().isValid() )
-    result = model->record(currentrow).value(displayedfield);
-
-    return result;
-}
-
-int SubTableWidget::findRecordByAttributeList(QList<QPair<QString, QVariant> > &attrlist)
-{
-    if(!model->query().isActive() || attrlist.size() == 0) return -1;
-
-    int  currow = 0;
-    bool curf = false;
-    int  cura = 0;
-
-    while(curf == false && currow < model->record().count())
-    {
-        while(curf == false && cura < attrlist.size())
-        {
-            QPair<QString, QVariant>* curoption = &attrlist[cura];
-            curf = (model->record(currow).contains(curoption->first) &
-                     model->record(currow).value(curoption->first) == curoption->second);
-            cura ++;
-        }
-        cura = 0;
-        currow++;
-    }
-    currow--;
-    if(currow < model->record().count()) return currow;
-    else return -1;
-}
-
-void SubTableWidget::mousePressEvent(QMouseEvent *event)
-{
-    QWidget::mousePressEvent(event);
-    if(!movable) return;
-    mpos = event->pos();
-}
-
-void SubTableWidget::mouseMoveEvent(QMouseEvent *event)
-{
-        QWidget::mouseMoveEvent(event);
-        if(!movable) return;
-        if (mpos.x() >= 0 && event->buttons() && Qt::LeftButton)
-        {
-            QPoint diff = event->pos() - mpos;
-            QPoint newpos = this->pos() + diff;
-
-            this->move(newpos);
-        }
-}
-
-void SubTableWidget::mouseReleaseEvent(QMouseEvent *event)
-{
-        QWidget::mouseMoveEvent(event);
-        if(!movable) return;
-        /// очистить старое значение позиции нажатия мыши
-        mpos = QPoint(-1, -1);
-        QWidget::mouseReleaseEvent(event);
-}
-
-void SubTableWidget::on_tableView_clicked(const QModelIndex &index)
-{
-    if(!index.isValid() || currentrow == index.row()) return ;
-    currentrow = index.row();
-    emit newrowselected();                                                      /// сообщить - новая строка выделена
-}
-
-void SubTableWidget::applyTableHeaders()
-{
-    /// установка заголовков таблицы
-    for(int i = 0; i < headernamelist.size(); ++i)
-        model->setHeaderData(i, Qt::Horizontal, headernamelist.at(i) );
-}
-
-void SubTableWidget::applyCurrentRow()
-{
-    ui->tableView->selectionModel()->select(ui->tableView->model()->index(currentrow,0),
-                                            QItemSelectionModel::ClearAndSelect |
-                                            QItemSelectionModel::Rows);
-
-    if(ui->tableView->focusPolicy() != Qt::NoFocus) ui->tableView->setFocus();
-    emit newrowselected();                                                      /// сообщить - новая строка выделена
-}
-
+*/
 

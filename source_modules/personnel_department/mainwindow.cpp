@@ -97,9 +97,9 @@ void MainWindow::initTables()
     QStringList headerList;
 /// подготовить таблицу - специальности
     specialitytable.setConnectionName(connectionname);
-    specialitytable.setSelect ("SELECT * FROM speciality ");
+    specialitytable.setSelect ("* FROM speciality ");
     specialitytable.setWhere  ("");
-    specialitytable.setOrderBy("ORDER BY idspeciality");
+    specialitytable.setOrderBy("idspeciality");
     headerList << "Шифр"
                << "Аббревиатура"
                << "Наименование"
@@ -110,22 +110,21 @@ void MainWindow::initTables()
     headerList.clear();
 /// подготовить таблицу - группы
     grouptable.setConnectionName(connectionname);
-    grouptable.setSelect ("SELECT * FROM groups ");
-    grouptable.setWhere  ("WHERE speciality = ? ");
-    grouptable.setOrderBy("ORDER BY idgroup");
-    headerList << "Номер"
+    grouptable.setSelect ("* FROM groups ");
+    grouptable.setWhere  ("speciality = ? ");
+    grouptable.setOrderBy("idgroup");
+    headerList << "#"
                << "Специальность"
                << "Наименование"
                << "Год формирования"
-               << "Форма обучения"
+               << "Форма обуч."
                << "Бюджет"
                << "Курс";
     grouptable.setAlterFieldsName(headerList);
     headerList.clear();
 /// подготовить таблицу - студенты
     studenttable.setConnectionName(connectionname);
-    studenttable.setSelect("SELECT "
-                           "student.subject, "
+    studenttable.setSelect("student.subject, "
                            "student.numbertestbook, "
                            "subject.surname, "
                            "subject.name, "
@@ -148,9 +147,10 @@ void MainWindow::initTables()
                            "LEFT JOIN groups  ON (student.group = groups.idgroup) "
                            "LEFT JOIN subject ON (student.subject = subject.idsubject) "
                            );
-    studenttable.setWhere("WHERE student.group = ?");
+    studenttable.setWhere("student.group = ?");
+    studenttable.setOrderBy("subject");
     headerList << "#"
-               << "Номер зачетки"
+               << "№ зачетки"
                << "Фамилия"
                << "Имя"
                << "Отчество"
@@ -170,7 +170,19 @@ void MainWindow::initTables()
                << "Дополнительно";
     studenttable.setAlterFieldsName(headerList);
 
-    /// ВАЖНО - установка глобальной таблицы
+/// подготовить таблицу - список гражданств
+    citizenship.setConnectionName(connectionname);
+    citizenship.setSelect("DISTINCT idcitizenship, citizenshipname "
+                          "FROM citizenshiplist "
+                          "INNER JOIN citizenshipforsubject "
+                          "ON ( citizenshipforsubject.citizenship = citizenshiplist.idcitizenship)");
+    citizenship.setWhere("citizenshipforsubject.subject = ?");
+    citizenship.setOrderBy("idcitizenship");
+    headerList << "#" << "Гражданство";
+    citizenship.setAlterFieldsName(headerList);
+    headerList.clear();
+
+/// ВАЖНО - установка глобальной таблицы
     globaltable = &specialitytable;
 
 }

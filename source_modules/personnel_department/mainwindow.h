@@ -102,6 +102,8 @@ private:
     MyTable grouptable;
     MyTable studenttable;
 
+    MyTable citizenship;
+
     QSettings*              setting;                                            /// запись/чтение параметров приложения
 
 };

@@ -46,10 +46,10 @@ QVariant MyTable::getCurrentRecordFieldValue(QString field)
 void MyTable::execQuery(bool select, bool where, bool filter, bool orderby)
 {
     QString str = "";
-    if(select)  str += selectsection;
-    if(where)   str += wheresection;
-    if(filter)  str += filtersection;
-    if(orderby) str += orderbysection;
+    if(select)  str += "SELECT "+selectsection+" ";
+    if(where)   str += "WHERE " +wheresection+" ";
+    if(filter)  str += (where ? "AND " : "WHERE ")+filtersection +" ";
+    if(orderby) str += "ORDER BY "+orderbysection;
 
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     if(!db.open()){
@@ -88,6 +88,12 @@ void MyTable::displayTable(QTableView *viewer)
     viewer->setEditTriggers(QAbstractItemView::NoEditTriggers);
     viewer->resizeColumnsToContents();
     viewer->resizeRowsToContents();
+}
+
+EditRecordModel *MyTable::getCurrentRecordModel()
+{
+    recordmodel.setData(tablemodel.record(currentrow));
+    return &recordmodel;
 }
 
 QVariant MyTable::getCurrentRecordFieldValue(int index)

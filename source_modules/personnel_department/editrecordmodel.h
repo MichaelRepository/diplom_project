@@ -12,9 +12,7 @@
 
 #include <QAbstractTableModel>
 #include <QColor>
-
-#include <QList>
-#include <QPair>
+#include <QtSql>
 #include <QVariant>
 
 class EditRecordModel : public QAbstractTableModel
@@ -24,20 +22,20 @@ public:
     explicit EditRecordModel(QObject *parent = 0);
     ~EditRecordModel();
 
+    void setData(QSqlRecord &record);
+
     int columnCount(const QModelIndex & parent = QModelIndex()) const;          /// возвращает кол-во столбцов относительно родительского индекса
     int rowCount(const QModelIndex & parent = QModelIndex()) const;             /// возвращает число строк относительно родительского индекса
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const; /// отображение данных текущего индекса, относительно роли объекта
     bool setData(const QModelIndex & index, const QVariant & value,             /// записывает данные в элемент соответсвующий индексу
                  int role = Qt::EditRole);
-    QVariant headerData ( int section, Qt::Orientation orientation,             /// данные в зоголовках столбцов
+    QVariant headerData ( int section, Qt::Orientation orientation,             /// данные в заголовках столбцов
                           int role = Qt::DisplayRole ) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;                        /// установка флагов (активный, выделяемый и т.д)
 
-    void modelAddRow(QString key, QVariant value);                              /// метод для добавлении данных
-    QVariant getValue(int row);                                                 /// метод для получения значения по номеру атрибута
-
 private:
-    QList< QPair<QString, QVariant> > listmodel;                                /// реальное хранилище данных
+    /// реальное хранилище данных
+    QSqlRecord recorddata;
 };
 
 #endif // EDITRECORDMODEL_H

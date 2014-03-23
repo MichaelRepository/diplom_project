@@ -48,7 +48,10 @@ QAbstractItemView:item::selected{
 color:#fff;
 background-color: #3399FF;
 }
-</string>
+
+QWidget{
+bacground-color:rgba(255, 255, 191, 127);
+}</string>
      </property>
      <property name="editTriggers">
       <set>QAbstractItemView::CurrentChanged|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
