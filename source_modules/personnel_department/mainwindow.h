@@ -87,17 +87,15 @@ private:
     QAction*                Table_record_add;
     QAction*                Table_record_remove;
     /// объекты для работы с СУБД
-    QSqlQuery*              query;                                              /// текущий запрос к СУБД
-    QSqlQueryModel*         querymodel;                                         /// модель данных запроса
     QSpreadsheetHeaderView* header;                                             /// заголовок таблицы (вьювера)
     /// служебные параметры и объекты
     int                     userid;                                             /// идентификатор пользователя
     QString                 connectionname;                                     /// имя для получения подключения к СУБД
     Tables                  currenttable;                                       /// активная таблица
-    QString                 currentfilter;                                      /// активный фильтр
-    bool                    filterchecked;                                      /// флаг фильтра (активен/неактивен)
-    // ОБНОВЛЕНИЕ
+
+    /// Таблицы
     MyTable *globaltable;
+
     MyTable specialitytable;
     MyTable grouptable;
     MyTable studenttable;

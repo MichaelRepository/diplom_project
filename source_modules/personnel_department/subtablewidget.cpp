@@ -8,8 +8,10 @@ SubTableWidget::SubTableWidget(QWidget *parent) :
     ui->setupUi(this);
 
     statusbar = new QStatusBar(this);
+    standartheader = ui->tableView->horizontalHeader();
     header    = new QSpreadsheetHeaderView(Qt::Horizontal,this);
     movable   = true;                                                           /// разрешить перемещение окна
+    ui->tableView->setHorizontalHeader(header);
 
     QLayout* layoutWidget = ui->gridLayout_2;
     layoutWidget->setContentsMargins(0,0,0,0);
@@ -20,6 +22,12 @@ SubTableWidget::SubTableWidget(QWidget *parent) :
 SubTableWidget::~SubTableWidget()
 {
     delete ui;
+}
+
+void SubTableWidget::setTable(MyTable *_table)
+{
+    table = _table;
+    table->displayTable(ui->tableView);
 }
 
 void SubTableWidget::setTitleText(QString text)
@@ -43,9 +51,9 @@ void SubTableWidget::setDisplayMode(bool titleVisible,
     ui->toolsframe->setVisible(editbuttonpanelVisible);
     ui->tableView->setFocusPolicy(tablefocuspolicy);
     if(!headerMenuVisible){
-        QHeaderView *header = new QHeaderView(Qt::Horizontal,this);
+        //QHeaderView *header = new QHeaderView(Qt::Horizontal,this);
         header->setFocusPolicy(Qt::NoFocus);
-        ui->tableView->setHorizontalHeader(header);
+        ui->tableView->setHorizontalHeader(standartheader);
         ui->tableView->resizeColumnsToContents();
         ui->tableView->resizeRowsToContents();
     }
@@ -86,8 +94,7 @@ void SubTableWidget::mouseReleaseEvent(QMouseEvent *event)
 void SubTableWidget::on_tableView_clicked(const QModelIndex &index)
 {
     //УСТАНОВИТЬ В ТАБЛИЦЕ ТЕКЩУЮ СТРОКУ
-    if(!index.isValid() || currentrow == index.row()) return ;
-    currentrow = index.row();
+    table->setCurrentRow(index.row());
     emit newrowselected();                                                      /// сообщить - новая строка выделена
 }
 

@@ -38,14 +38,19 @@ class DelegatButton : public QPushButton
 {
     Q_OBJECT
 public:
-    DelegatButton(QWidget *parent):QPushButton(parent){
+    DelegatButton(MyTable *table, QWidget *parent):
+        QPushButton(parent)
+    {
         subtabledlg = new SubTableWidget(this);
+
         QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
-                         this,        &DelegatButton::update);
+                         this,        &DelegatButton:: update);
+        subtabledlg->setTable(subtable);
     }
-// ЗДЕСЬ //
+
     void updateDate(){                                                          /// перезаполучить данные у виджета субтаблицы
-        QVariant value = subtabledlg->getDisplayedFieldValue();
+        if(subtable == 0) return;
+        QVariant value = subtable->getCurrentRecordFieldDisplayedInEditorValue();
         this->setText(value.toString());
     }
     void mouseReleaseEvent(QMouseEvent * event){                                /// отобразить виджет субтаблицы при отпускани кнопки
@@ -70,7 +75,8 @@ public:
 
     void showSubtable()
     {
-        if(subtableshov){
+        if(subtableshov || subtable == 0)
+        {
             this->close();
             subtabledlg->hide();
             subtableshov = false;
@@ -90,6 +96,7 @@ private slots:
     void update(){updateDate(), this->repaint();}
 private:
     SubTableWidget *subtabledlg;
+    MyTable        *subtable;
     bool subtableshov;
 };
 
@@ -99,8 +106,7 @@ public:
     RecordDelegate(QObject * parent = 0);
     ~ RecordDelegate();
 
-    void setRegStrList        (QList<QString> *list);                           /// установить список рег. выражений для каждого валидатора данных
-    void setTableAttributeList(QMap<QString, SubTableWidget *> *list);          /// установить список атрибутов, являющихся субтаблицами
+    void setTable(MyTable* _table);
 
     QWidget *createEditor(QWidget * parent, const QStyleOptionViewItem & option,/// метод создает редактор для каждого элемента модели
                           const QModelIndex & index) const;
@@ -110,8 +116,7 @@ public:
     void	paint(QPainter * painter, const QStyleOptionViewItem & option,
                   const QModelIndex & index) const;
 private:
-    QList<QString> *regexplist;                                                 /// список регулярных выражений для валидаторов
-    QMap<QString, SubTableWidget *> *tableattributelist;                        /// список атрибутов, являющихся субтаблицами
+   MyTable *table;
 };
 
 #endif // RECORDDELEGATE_H

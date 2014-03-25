@@ -42,6 +42,11 @@ MainWindow::MainWindow(QWidget *parent) :
         this->setStyleSheet(qcss);
     }*/
 
+    /// создание окна для отображения подтаблиц
+    subtablewidget = new SubTableWidget(this);                                  /// установка флага - "контекстное меню", для диалога субтаблиц
+    subtablewidget->setWindowFlags(Qt::Popup);
+    subtablewidget->setTitleText("");
+
     /// создание меток, помещаемых в статус бар
     Status_label                = new QLabel(this);
     Status_label_curtable       = new QLabel(this);
@@ -86,16 +91,17 @@ MainWindow::~MainWindow()
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     db.close();
 
-    query->clear();
-    querymodel->deleteLater();
-
     delete ui;
 }
 
 void MainWindow::initTables()
 {
     QStringList headerList;
+    QMap <QString,QString> validatorsdata;
+    QStringList noeditablefields;
+    QStringList editorkeys;
 /// подготовить таблицу - специальности
+    specialitytable.tablename = "speciality";
     specialitytable.setConnectionName(connectionname);
     specialitytable.setSelect ("* FROM speciality ");
     specialitytable.setWhere  ("");
@@ -106,9 +112,23 @@ void MainWindow::initTables()
                << "Период обучения"
                << "Базируется на"
                << "Специализация";
+    editorkeys << "idspeciality";
+
+    validatorsdata.insert("idspeciality",   "\\d{1,6}");
+    validatorsdata.insert("abbreviation",   ".*");
+    validatorsdata.insert("name",           "[\\w\\s]{1,50}");
+    validatorsdata.insert("periodeducation","\\d{1,3}");
+    validatorsdata.insert("basedon",        "[\\w\\s]{1,100}");
+    validatorsdata.insert("specialization", "[\\w\\s]{1,100}");
+
     specialitytable.setAlterFieldsName(headerList);
+    specialitytable.setEditorKeyFields(editorkeys);
+    specialitytable.setFieldValidatorsData(validatorsdata);
     headerList.clear();
+    editorkeys.clear();
+    validatorsdata.clear();
 /// подготовить таблицу - группы
+    grouptable.tablename = "groups";
     grouptable.setConnectionName(connectionname);
     grouptable.setSelect ("* FROM groups ");
     grouptable.setWhere  ("speciality = ? ");
@@ -123,7 +143,8 @@ void MainWindow::initTables()
     grouptable.setAlterFieldsName(headerList);
     headerList.clear();
 /// подготовить таблицу - студенты
-    studenttable.setConnectionName(connectionname);
+    studenttable.tablename = "student";
+    studenttable.setConnectionName(connectionname);    
     studenttable.setSelect("student.subject, "
                            "student.numbertestbook, "
                            "subject.surname, "
@@ -149,6 +170,18 @@ void MainWindow::initTables()
                            );
     studenttable.setWhere("student.group = ?");
     studenttable.setOrderBy("subject");
+    noeditablefields << "subject"
+                     << "citizenship"
+                     << "residence"
+                     << "passports"
+                     << "represent"
+                     << "represent"
+                     << "education"
+                     << "privileges"
+                     << "moreinf"
+                     << "course"
+                     << "form"
+                     << "budget";
     headerList << "#"
                << "№ зачетки"
                << "Фамилия"
@@ -168,9 +201,13 @@ void MainWindow::initTables()
                << "Образование"
                << "Льготы"
                << "Дополнительно";
+    editorkeys << "subject";
+    studenttable.setNoEditableFieldsList(noeditablefields);
     studenttable.setAlterFieldsName(headerList);
+    studenttable.setEditorKeyFields(editorkeys);
 
 /// подготовить таблицу - список гражданств
+    citizenship.tablename = "citizenshipname";
     citizenship.setConnectionName(connectionname);
     citizenship.setSelect("DISTINCT idcitizenship, citizenshipname "
                           "FROM citizenshiplist "
@@ -181,6 +218,13 @@ void MainWindow::initTables()
     headerList << "#" << "Гражданство";
     citizenship.setAlterFieldsName(headerList);
     headerList.clear();
+
+    /// формирование списка внешних ключей для каждой таблицы
+    QMap<QString,QPair<MyTable*,QString> > foreignkeys;
+    /// для таблицы - студеты
+    foreignkeys.insert(QString("citizenship"),qMakePair(&citizenship,QString("idcitizenship") ) );
+    studenttable.setForeignKeys(foreignkeys);
+    foreignkeys.clear();
 
 /// ВАЖНО - установка глобальной таблицы
     globaltable = &specialitytable;
@@ -239,23 +283,10 @@ void MainWindow::init_sys()
     if(authorizedlg.getstate() == CANCEL) {exit(0);}                            /// во время авторизации произошла ошибка или было отменено действие
     userid = authorizedlg.getuserid();                                          /// получен идентификатор пользователя
 
-    /// создание объектов для обработки и визуализации данных,
-    /// получаемых SQL запросом
-    query       = new QSqlQuery(db);                                            /// создание и привязка запроса к подключению
-    querymodel  = new QSqlQueryModel();                                         /// создание модели данных
-    ui->tableView->setModel(querymodel);                                        /// привязка вьювера и модели
-
-    /// обработка выделения строк
-    QObject::connect (ui->tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
-                      this,                            &MainWindow::tableView_items_selected);
-
-
     initTables();                                                               /// ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ
     set_current_table(SPECIALITY, BUTTONMODE);                                  /// установить текущую таблицу
 
-    /// создание окна для отображения подтаблиц
-    subtablewidget = new SubTableWidget(connectionname, this);                  /// установка флага - "контекстное меню", для диалога субтаблиц
-    subtablewidget->setWindowFlags(Qt::Popup);
+
 
     splashwindow->finish(this);
     this->show();
@@ -301,7 +332,7 @@ void MainWindow::refresh_menu()
     ui->Edit_button1->setEnabled(state);
     Table_record_edit->setEnabled(state);
     /// обновить надписи в статус баре
-    Status_label_count_rows->setText    (" Число записей: "+ QString::number(query->size())+" ");
+    Status_label_count_rows->setText    (" Число записей: "+ QString::number(globaltable->getRecordsCount())+" ");
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
 }
@@ -350,9 +381,10 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
     globaltable->setCurrentRow(-1);
     globaltable->displayTable(ui->tableView);
 
-    /*if(table == STUDENT)
-         header->hideSection(0);
-    else header->showSection(0);*/
+    /// обработка выделения строк
+    QObject::connect (ui->tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
+                      this,                            &MainWindow::tableView_items_selected,
+                      Qt::UniqueConnection);
 
     refresh_menu();
 }
@@ -393,50 +425,58 @@ void MainWindow::on_Switch_table_stud_button_clicked()
 
 void MainWindow::on_tableView_clicked(const QModelIndex &index)
 {
+    globaltable->setCurrentRow(index.row());
     if(currenttable != STUDENT)   return ;                                      /// только для таблицы студенты
-    if(index.column() < 12)       return ;                                      /// только для 12-19 столбцов таблицы
+    MyTable* subtable;
+    if(!globaltable->isForeignKey(index.column() ) ) return;
+    subtable = globaltable->getForeignTable(index.column() );
+    if(subtable == 0) return;
 
-    int idsubject = query->value("subject").toInt();
 
-    QString str1 = query->value("surname").toString();
-    QString str2 = index.model()->headerData(index.column(),
-                                             Qt::Horizontal).toString();
-    subtablewidget->setTitleText(str1+" >> "+str2);
-    SubTable subtable;
-    switch(index.column()){
-    case 12: subtable = CITIZENSHIP;
-        break;
-    case 13: subtable = RESIDENCE;
-        break;
-    case 14: subtable = PASSPORT;
-        break;
-    case 15: subtable = REPRESENT;
-        break;
-    case 16: subtable = EDUCATION;
-        break;
-    case 17: subtable = PRIVILEGES;
-        break;
-    /*case 18: subtable = PROGRESS;
-        break;*/
-    case 18: subtable = MOREINF;
-        break;
-    default: return ;
-    }
+    /**
+        танец с бубном:
+        >задача: необходимо получить координаты точки в которую
+         переместить виджет subtable.
+         Точка должна быть расчитана относительно позиции ячейки.
+        >проблема: не корректно определяется чилдрен виджет вьювера по
+         заданным координатам.
+        >возможные причины: заголовок таблици и первая строка являются одним
+         элментом, тоесть секция хедера ячейка соотвествующего столбца - есть
+         одна ячейка.
+        >решение: получение координат visualRect иперемещение их в середину виджета,
+         путём увеличения x на величину w, а y на h
+    **/
+
+    QRect cell = ui->tableView->visualRect(index);
+    QPoint pos(cell.x(),cell.y());
+    QPoint pos1(pos.x()+cell.width()/2,pos.y()+cell.height()/2);
+    pos = ui->tableView->childAt(pos1)->mapToGlobal(pos);
+    if(index.row() == 0)
+        pos.setY(pos.y()+2*cell.height());
+    else
+        pos.setY(pos.y()+cell.height());
+
+    pos.setX(pos.x()+20);
 
     /// определяется точка вывода контекстного меню
     /// если позиция курсора по Y больше половины высоты десктопа + 200px
     /// выводить контекстное меню над курсором иначе под курсором
-    QPoint pos = cursor().pos();
-    if(cursor().pos().y() + subtablewidget->height() > QApplication::desktop()->availableGeometry(0).height())
+    if(pos.y() + subtablewidget->height() > QApplication::desktop()->availableGeometry(0).height())
         pos.setY(pos.y() - subtablewidget->height());
     ///тоже самое по X
-    if(cursor().pos().x() + subtablewidget->width() > QApplication::desktop()->availableGeometry(0).width())
-        pos.setX(pos.x() - subtablewidget->width());
+    if(pos.x() + subtablewidget->width() > QApplication::desktop()->availableGeometry(0).width())
+        pos.setX(pos.x() - subtablewidget->width()-20);
 
+    QVariantList bindvalues;
+    bindvalues << globaltable->getCurrentRecordFieldValue(0);
+    subtable->bindValues(bindvalues);
+    subtable->execQuery(true,true,false,true);
+
+    subtablewidget->setTitleText(globaltable->tablename+"->"+subtable->tablename);
+    subtablewidget->setTable(subtable);
     subtablewidget->move(pos);
-    /// вывод диалогового окна с суб таблицей в качестве контекстного меню
-    subtablewidget->ExecSqlQuery(subtable,idsubject);
     subtablewidget->show();
+
 
 }
 
@@ -457,6 +497,12 @@ void MainWindow::remove_records()                                               
 
 void MainWindow::edit_records()                                                 /// изменить записи
 {
+    dlgrecordedit.setTable(globaltable);
+    int res = dlgrecordedit.exec();
+    if(res == 1)
+        globaltable->applyEditing();
+    globaltable->updateData();
+/**
     /// определить выбранную для редактирования запись
     QModelIndexList rowslist = ui->tableView->selectionModel()->selectedRows(0);/// получить список всех строк в которых выделен 0-й столбец
     if(rowslist.size() != 1) return ;                                           /// список содержит не одну строку -> завершить
@@ -627,6 +673,7 @@ void MainWindow::edit_records()                                                 
 
     tableattributelist.clear();
     query->first();
+**/
 }
 
 void MainWindow::on_Edit_button1_clicked()

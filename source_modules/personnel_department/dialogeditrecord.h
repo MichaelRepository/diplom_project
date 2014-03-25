@@ -21,15 +21,17 @@ public:
     explicit DialogEditRecord(QWidget *parent = 0);
     ~DialogEditRecord();
 
-
-    void setModel(EditRecordModel* model,                                       /// установить модель данных
-                  QList<QString>* regexplist = 0,                               /// передать список рег выражений валидаторам
-                  QMap<QString, SubTableWidget *> *tableattributelist  = 0);    /// передать список атрибутов, являющихся субтаблицами
-
+    void setTable(MyTable *_table);                                             /// передать ссылку на таблицу
     void showEvent(QShowEvent *event);
+
+private slots:
+    void on_cancellbt_clicked();
+    void on_confirmbt_clicked();
+
 private:
+    void closeEvent(QCloseEvent *evnt);
     Ui::DialogEditRecord *ui;
-    EditRecordModel* recordmodel;                                               /// модель данных для одной записи
+    MyTable *table;
 };
 
 #endif // DIALOGEDITRECORD_H

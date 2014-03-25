@@ -24,19 +24,15 @@ DialogEditRecord::~DialogEditRecord()
     delete ui;
 }
 
-void DialogEditRecord::setModel(EditRecordModel *model, QList<QString> *regexplist,
-                                QMap<QString, SubTableWidget *> *tableattributelist)
+void DialogEditRecord::setTable(MyTable *_table)
 {
-    /// приявязка вьювера к модели
-    recordmodel = model;
-    ui->treeView->setModel(recordmodel);
-    ui->treeView->resizeColumnToContents(0);
+    table = _table;
+    ui->treeView->setModel(table->getCurrentRecordModel());
     /// создание и привязка делегата
     RecordDelegate* delegate = new RecordDelegate(this);
-    delegate->setRegStrList(regexplist);                                        /// передача списка рег выражнией делегату
-    delegate->setTableAttributeList(tableattributelist);                        /// передать список атрибутов, являющихся субтаблицами
-
+    delegate->setTable(table);
     ui->treeView->setItemDelegate(delegate);
+    ui->treeView->resizeColumnToContents(0);
 }
 
 void DialogEditRecord::showEvent(QShowEvent *event)
@@ -45,4 +41,19 @@ void DialogEditRecord::showEvent(QShowEvent *event)
     this->setFocus();
     this->activateWindow();
     this->raise();
+}
+
+void DialogEditRecord::on_cancellbt_clicked()
+{
+    done(-1);
+}
+
+void DialogEditRecord::on_confirmbt_clicked()
+{
+    done(1);
+}
+
+void DialogEditRecord::closeEvent(QCloseEvent *evnt)
+{
+    done(0);
 }

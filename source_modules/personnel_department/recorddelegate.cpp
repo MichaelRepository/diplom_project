@@ -11,14 +11,9 @@ RecordDelegate::~RecordDelegate()
 
 }
 
-void RecordDelegate::setRegStrList(QList<QString> *list)
+void RecordDelegate::setTable(MyTable *_table)
 {
-    regexplist = list;
-}
-
-void RecordDelegate::setTableAttributeList(QMap<QString, SubTableWidget *> *list)
-{
-    tableattributelist = list;
+    table = _table;
 }
 
 QWidget *RecordDelegate::createEditor(QWidget *parent,
@@ -29,13 +24,12 @@ QWidget *RecordDelegate::createEditor(QWidget *parent,
     QModelIndex atributeindex = index.model()->index(index.row(),0);
     QString curatribut = atributeindex.data().toString();
 
-    /// проверка является ли атрибут субтаблицей
-    if(tableattributelist !=0 && tableattributelist->size() > 0 &&
-       tableattributelist->contains(curatribut)){
+    /// проверка является ли атрибут внешним ключем (ссылающимся на внешнюю таблицу)
+    if(table->isForeignKey(index.row()))
+    {
             /// вернуть в качестве редактора диалог вывода субтаблицы
-            DelegatButton *button = new DelegatButton(parent);
-            SubTableWidget*subtabledlg = tableattributelist->value(curatribut);
-            button->setSubTableDialog(subtabledlg);
+            MyTable* foreigntable = table->getForeignTable(index.row());
+            DelegatButton *button = new DelegatButton(foreigntable,parent);
             return button;
     }
 
@@ -69,24 +63,17 @@ void RecordDelegate::setEditorData(QWidget *editor,
     QModelIndex atrivuteindex = index.model()->index(index.row(),0);
     QString curatribut = atrivuteindex.data().toString();
     /// проверка является ли атрибут субтаблицей
-    if(tableattributelist !=0 && tableattributelist->size() > 0 &&
-       tableattributelist->contains(curatribut)){
+    if(table->isForeignKey(index.row()))
+    {
         DelegatButton *button = static_cast<DelegatButton*>(editor);
-        SubTableWidget *subtabledlg = tableattributelist->value(curatribut);
-        QVariant value = subtabledlg->getDisplayedFieldValue();
-        button->setText(value.toString());
+        button->updateDate();
         return ;
     }
 
 
     /// создание валидатора для текущего редактора
-    QString regstr;
-    if(regexplist !=0 && regexplist->size() > 0 &&                              /// проверка корректности списка рег выражений
-       index.row() < regexplist->size())
-        regstr = regexplist->at(index.row());
-    else
-        regstr = ".{0,255}";                                                    /// если некорректный список, позволить вводить любые символы
-
+    QString field = index.model()->index(index.row(),0).data(Qt::EditRole).toString();
+    QString regstr = table->getFieldValidatorData(field);
     QRegExp regexp(regstr);                                                     /// подготовка рег. выражения из строки
     QValidator* validator = new QRegExpValidator(regexp, editor);               /// создание валидатора
 
@@ -123,8 +110,8 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     QModelIndex atrivuteindex = index.model()->index(index.row(),0,index.parent());
     QString curatribut = atrivuteindex.data().toString();
     /// проверка является ли атрибут субтаблицей
-    if(tableattributelist !=0 && tableattributelist->size() > 0 &&
-       tableattributelist->contains(curatribut)){
+    if(table->isForeignKey(index.row()))
+    {
         DelegatButton *button = static_cast<DelegatButton*>(editor);
             model->setData(index, QVariant(button->text()));
         return ;
@@ -158,7 +145,31 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
 void RecordDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option,
                            const QModelIndex &index) const
 {
+    /*
+        перерисовать элементы, отображающие мена полей таблицы,
+        вместо реальных имен прорисовывать
+    */
+    /*if(index.column() == 0)
+    {
+           /* QStyleOptionViewItemV4 item(option);                                /// создается стиль прорисовки
+
+
+            QStyledItemDelegate::paint(painter, option, index);
+            //QApplication::style()->drawControl(QStyle::CE_ItemViewItem, &option, painter);/// прорисовка
+       */
+       /* QVariant val = table->getFieldAlterName(index.data(Qt::EditRole));      /// задается текст
+        QStyleOptionViewItem reoption(option);
+        reoption.text = val.toString();
+
+        QStyledItemDelegate::paint(painter, reoption, QModelIndex());
+        option.widget->style()->drawControl(QStyle::CE_ItemViewItem, &reoption, painter);*/
+
+
+    //return ;
+    //}*/
+
     QStyledItemDelegate::paint(painter, option, index);                         /// стандартная прорисовка элемента
+
 
 }
 

@@ -7,12 +7,17 @@ EditRecordModel::EditRecordModel(QObject *parent) :
 
 EditRecordModel::~EditRecordModel()
 {
-    recorddata.clear();
+
 }
 
-void EditRecordModel::setData(QSqlRecord &record)
+void EditRecordModel::setData(QSqlRecord *record)
 {
     recorddata = record;
+}
+
+void EditRecordModel::setAlterNames(QStringList *list)
+{
+    alternames = list;
 }
 
 int EditRecordModel::columnCount(const QModelIndex &parent) const
@@ -24,30 +29,36 @@ int EditRecordModel::columnCount(const QModelIndex &parent) const
 int EditRecordModel::rowCount(const QModelIndex &parent) const
 {
     if(parent.isValid()) return 0;
-    return recorddata.count();
+    return recorddata->count();
 }
 
 QVariant EditRecordModel::data(const QModelIndex &index, int role) const
 {
-    if(!index.isValid() || index.row() > recorddata.count())
+    if(!index.isValid() || index.row() > recorddata->count())
         return QVariant();
 
     switch(role)                                                                /// относительно роли индекса возвращается значение
     {
     case Qt::DisplayRole:
     case Qt::EditRole:{
-        if(recorddata.field(index.row()).value() =="...") return QVariant();    /// ОПРЕДЕЛЯЕТ КАКИЕ ПОЛЯ НЕ БУДУТ ОТОБРАЖАТЬСЯ В РЕДАКТОРЕ
         switch(index.column())
         {
-        case 0: return recorddata.field(index.row()).name();                    /// название атрибута
-        case 1: return recorddata.field(index.row()).value();                   /// значение атрибута
+        case 0:{                                                                /// название атрибута
+            if(role == Qt::DisplayRole && index.row() < alternames->size())
+                return QVariant( (*alternames)[index.row()] );                  /// отобразить альтернативное имя
+            else
+                return recorddata->field(index.row()).name();                   /// отобразить рельное имя
+        }
+        case 1:{                                                                /// значение атрибута
+                return recorddata->field(index.row()).value();
+        }
         default: return QVariant();
         }
     }
     case Qt::TextAlignmentRole:                                                 /// определяет размещение текста
         return Qt::AlignLeft;
-    case Qt::BackgroundColorRole:
-        return qVariantFromValue(QColor(255, 255, 191, 127));
+    /*case Qt::BackgroundColorRole:
+        return qVariantFromValue(QColor(255, 255, 191, 127));*/
     case Qt::CheckStateRole:                                                    /// определяет наличие переключателя
         return  QVariant();
     default: return QVariant();                                                 /// все остальные роли будут получать невалидный QVariant
@@ -57,8 +68,8 @@ QVariant EditRecordModel::data(const QModelIndex &index, int role) const
 bool EditRecordModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if(!index.isValid() || role != Qt::EditRole) return false;
-
-    recorddata.field(index.row()).setValue(value);
+    //recorddata->field(index.row()).setReadOnly(false);
+    recorddata->setValue(index.row(),value);
     return true;
 }
 

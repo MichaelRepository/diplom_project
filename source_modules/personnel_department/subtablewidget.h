@@ -29,6 +29,8 @@ public:
     explicit SubTableWidget(QWidget *parent = 0);
     ~SubTableWidget();
 
+    void setTable(MyTable* _table);
+
     void setTitleText(QString text);                                            /// установить заголовок
     void setDisplayMode(bool titleVisible           = true,                     /// отображать заголовок
                         bool editbuttonpanelVisible = true,                     /// отображение панели с кнопками редактирования
@@ -52,6 +54,7 @@ private:
     Ui::SubTableWidget *ui;
 
     QSpreadsheetHeaderView* header;                                             /// вьювер заголовока таблицы
+    QHeaderView*            standartheader;
     QStatusBar*         statusbar;
     QPoint              mpos;
     bool                movable;                                                /// перемещение окна

@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>446</width>
-    <height>292</height>
+    <width>519</width>
+    <height>311</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -20,7 +20,8 @@
 		color:#E0E0E0;
         background: #2C3033;
 		font-family:&quot;Arial&quot;,&quot;Courier&quot;;
-}</string>
+}
+#frame{border:1px solid #68A0AD;}</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
@@ -41,7 +42,7 @@
    <item row="0" column="0">
     <widget class="QFrame" name="frame">
      <property name="styleSheet">
-      <string notr="true">#frame{border:1px solid 2C3033;}</string>
+      <string notr="true"/>
      </property>
      <property name="frameShape">
       <enum>QFrame::StyledPanel</enum>
@@ -60,6 +61,9 @@
        <number>0</number>
       </property>
       <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <property name="spacing">
        <number>0</number>
       </property>
       <item row="1" column="0">
