@@ -17,26 +17,31 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     messdlg.cpp \
     dbmessdlg.cpp \
-    wowsqlmodel.cpp \
     authorizdlg.cpp \
     QSpreadsheetHeaderView.cpp \
     dialogeditrecord.cpp \
-    editrecordmodel.cpp \
     recorddelegate.cpp \
     subtablewidget.cpp \
-    mytable.cpp
+    MyTable/myeditrecordmodel.cpp \
+    MyTable/myinfoscheme.cpp \
+    MyTable/mysqlrecord.cpp \
+    MyTable/mytable.cpp \
+    MyTable/mytablemodel.cpp
 
 HEADERS  += mainwindow.h \
     messdlg.h \
     dbmessdlg.h \
-    wowsqlmodel.h \
     authorizdlg.h \
     QSpreadsheetHeaderView.h \
     dialogeditrecord.h \
-    editrecordmodel.h \
     recorddelegate.h \
     subtablewidget.h \
-    mytable.h
+    MyTable/myeditrecordmodel.h \
+    MyTable/myinfoscheme.h \
+    MyTable/mysqlfield.h \
+    MyTable/mysqlrecord.h \
+    MyTable/mytable.h \
+    MyTable/mytablemodel.h
 
 FORMS    += mainwindow.ui \
     messdlg.ui \

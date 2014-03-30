@@ -15,12 +15,12 @@ public:
     explicit MessDlg(QWidget *parent = 0);
     ~MessDlg();
 
-    void setdata(QString titl, // установить
+    void setdata(QString titl,
                  QString text,
                  QString info);
-    void settitl(QString titl);// установить заголовок
-    void settext(QString text);// установить текс
-    void setinfo(QString info);// установить информацию
+    void settitl(QString titl);
+    void settext(QString text);
+    void setinfo(QString info);
     
 private slots:
     void on_OkButton_clicked();

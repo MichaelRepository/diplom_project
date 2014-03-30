@@ -12,7 +12,7 @@
 
 #include "dbmessdlg.h"
 #include "QSpreadsheetHeaderView.h"
-#include "mytable.h"
+#include "MyTable/mytable.h"
 
 /*enum SubTable{CITIZENSHIP, RESIDENCE, PASSPORT, REPRESENT,
               EDUCATION, PRIVILEGES,  MOREINF};*/
@@ -29,7 +29,7 @@ public:
     explicit SubTableWidget(QWidget *parent = 0);
     ~SubTableWidget();
 
-    void setTable(MyTable* _table);
+    void setQueryModel(QSqlQueryModel* model);
 
     void setTitleText(QString text);                                            /// установить заголовок
     void setDisplayMode(bool titleVisible           = true,                     /// отображать заголовок
@@ -38,14 +38,14 @@ public:
                         bool dlgMovable             = true,                     /// перемещение окна
                         Qt::FocusPolicy tablefocuspolicy = Qt::WheelFocus
                         );
-    //void setFieldDisplayedInEditor(QString field);                              /// установить атрибут, значение которого отображается в редакторе
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
+    void setRow(int row);
 
 signals:
-    void newrowselected();
+    void newrowselected(int);
 
 private slots:
     void on_tableView_clicked(const QModelIndex &index);
@@ -58,9 +58,7 @@ private:
     QStatusBar*         statusbar;
     QPoint              mpos;
     bool                movable;                                                /// перемещение окна
-
-    MyTable*            table;
-    //QString             displayedfield;                                         /// имя атрибута значение которого будет отображено в редакторе
+    QSqlQueryModel*     querymodel;
 };
 
 #endif // SUBTABLEWIDGET_H

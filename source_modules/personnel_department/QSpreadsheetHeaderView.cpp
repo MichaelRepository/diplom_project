@@ -33,7 +33,7 @@ QSpreadsheetHeaderView::QSpreadsheetHeaderView(Qt::Orientation orientation,
                                                QWidget * parent)
     : QHeaderView(orientation, parent)
 {
-    setAttribute(Qt::WA_Hover, true);                                           /// установка атрибута, обеспечивающего перерисовку компонента при покидании и наведении мвши
+    setAttribute(Qt::WA_Hover, true);                                           /// установка атрибута, обеспечивающего перерисовку компонента при покидании и наведении мыши
 
     menu = new QMenu(this);                                                     /// создание меню
     hideCol = menu->addAction(QIcon(":/svg/eye-icon.svg"),"Скрыть столбец");

@@ -15,6 +15,8 @@
 #include <QtSql>
 #include <QVariant>
 
+#include "mysqlrecord.h"
+
 class EditRecordModel : public QAbstractTableModel
 {
     Q_OBJECT
@@ -22,13 +24,12 @@ public:
     explicit EditRecordModel(QObject *parent = 0);
     ~EditRecordModel();
 
-    void setData                (QSqlRecord  *record);
-    void setAlterNames          (QStringList *list);
+    void setRecordData    (MySqlRecord  *record);
 
     int columnCount (const QModelIndex & parent = QModelIndex()) const;         /// возвращает кол-во столбцов относительно родительского индекса
     int rowCount    (const QModelIndex & parent = QModelIndex()) const;         /// возвращает число строк относительно родительского индекса
     QVariant data   (const QModelIndex & index, int role = Qt::DisplayRole) const; /// отображение данных текущего индекса, относительно роли объекта
-    bool setData    (const QModelIndex & index, const QVariant & value,         /// записывает данные в элемент соответсвующий индексу
+    bool setRecordData    (const QModelIndex & index, const QVariant & value,         /// записывает данные в элемент соответсвующий индексу
                      int role = Qt::EditRole);
     QVariant headerData ( int section, Qt::Orientation orientation,             /// данные в заголовках столбцов
                           int role = Qt::DisplayRole ) const;
@@ -36,8 +37,7 @@ public:
 
 private:
     /// реальное хранилище данных
-    QSqlRecord*  recorddata;
-    QStringList* alternames;                                                     /// альтернативное название заголовков
+    MySqlRecord*  recorddata;
 };
 
 #endif // EDITRECORDMODEL_H

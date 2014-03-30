@@ -18,7 +18,7 @@ public:
     ~dbMessDlg();
 
     void showdbmess(QSqlError lasterror);                                       // отобразить сообщение
-    
+    void setAdditionText(QString text);
 private slots:
     void on_OkButton_clicked();
 

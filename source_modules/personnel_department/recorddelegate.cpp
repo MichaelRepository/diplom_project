@@ -1,9 +1,10 @@
 #include "recorddelegate.h"
 
-RecordDelegate::RecordDelegate(QObject *parent):
+RecordDelegate::RecordDelegate(QString connectname, MySqlRecord* record, QObject * parent):
     QStyledItemDelegate(parent)
 {
-
+    connectionname = connectname;
+    recorddata     = record;
 }
 
 RecordDelegate::~RecordDelegate()
@@ -11,26 +12,74 @@ RecordDelegate::~RecordDelegate()
 
 }
 
-void RecordDelegate::setTable(MyTable *_table)
+void RecordDelegate::initDelegate()
 {
-    table = _table;
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    if(!db.open())
+    {
+        dbMessDlg dlg;
+        dlg.showdbmess(db.lastError());
+        return ;
+    }
+    /// подготавливаются модели для отображения
+    /// данных из слинкованных таблиц
+    for(int i = 0; i < recorddata->count(); ++i)
+    {
+        if(recorddata->isReference(i))
+        {
+            MyDataReference reference = recorddata->referenceDataOfField(i);
+            QSqlQueryModel *query = new QSqlQueryModel(this);
+            query->setQuery(reference.sqltext,db);
+            if(query->lastError().isValid())
+            {
+                dbMessDlg dlg;
+                dlg.showdbmess(db.lastError());
+                return ;
+            }
+            if(recorddata->alterField(i).size() >0) /// подмена значения
+            {
+                while(query->query().next())
+                {
+                    if(query->query().value(0) == recorddata->value(i))
+                    {
+                        recorddata->setAlterData(i,query->query().value(recorddata->alterField(i)));
+                        break;
+                    }
+                }
+            }
+            QStringList::iterator itr;
+            int j = 0;
+            for(itr = reference.alternames.begin(); itr != reference.alternames.end(); ++itr)
+            {
+                query->setHeaderData(j,Qt::Horizontal,QVariant(*itr));
+                ++j;
+            }
+            querylist.insert(i,query);
+        }
+    }
 }
 
 QWidget *RecordDelegate::createEditor(QWidget *parent,
                                       const QStyleOptionViewItem &option,
                                       const QModelIndex &index) const
 {
-    QVariant::Type curtype = index.data().type();                               /// определяет тип данных
-    QModelIndex atributeindex = index.model()->index(index.row(),0);
-    QString curatribut = atributeindex.data().toString();
+    QVariant::Type curtype    = index.data().type();                            /// определяет тип данных
 
-    /// проверка является ли атрибут внешним ключем (ссылающимся на внешнюю таблицу)
-    if(table->isForeignKey(index.row()))
+    int indexrow = index.row();
+
+    /// проверка является ли поле внешним ключем (ссылающимся на внешнюю таблицу)
+    if(recorddata->isReference(indexrow) )
     {
-            /// вернуть в качестве редактора диалог вывода субтаблицы
-            MyTable* foreigntable = table->getForeignTable(index.row());
-            DelegatButton *button = new DelegatButton(foreigntable,parent);
-            return button;
+        /// вернуть в качестве редактора - диалог вывода субтаблицы
+        QSqlQueryModel* model  = querylist[indexrow];
+        MySqlField      field  = recorddata->field(indexrow);
+        QVariant firstvalue;
+        if(field.alterField().size() >0)
+            firstvalue = field.alterData();
+        else
+            firstvalue = field.value();
+        DelegatButton *button1 = new DelegatButton(model, field,firstvalue, parent);
+        return button1;
     }
 
     switch (curtype) {
@@ -60,20 +109,14 @@ void RecordDelegate::setEditorData(QWidget *editor,
                                    const QModelIndex &index) const
 {
     QVariant::Type curtype = index.data().type();                               /// определяет тип данны
-    QModelIndex atrivuteindex = index.model()->index(index.row(),0);
-    QString curatribut = atrivuteindex.data().toString();
-    /// проверка является ли атрибут субтаблицей
-    if(table->isForeignKey(index.row()))
+
+    if(recorddata->isReference(index.row()))
     {
-        DelegatButton *button = static_cast<DelegatButton*>(editor);
-        button->updateDate();
         return ;
     }
 
-
     /// создание валидатора для текущего редактора
-    QString field = index.model()->index(index.row(),0).data(Qt::EditRole).toString();
-    QString regstr = table->getFieldValidatorData(field);
+    QString regstr = recorddata->validatorOfField(index.row());
     QRegExp regexp(regstr);                                                     /// подготовка рег. выражения из строки
     QValidator* validator = new QRegExpValidator(regexp, editor);               /// создание валидатора
 
@@ -107,13 +150,14 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
                                   const QModelIndex &index) const
 {
     QVariant::Type curtype = index.data().type();
-    QModelIndex atrivuteindex = index.model()->index(index.row(),0,index.parent());
-    QString curatribut = atrivuteindex.data().toString();
-    /// проверка является ли атрибут субтаблицей
-    if(table->isForeignKey(index.row()))
+    /// проверка является ли поле внешним ключем (ссылающимся на внешнюю таблицу)
+    if(recorddata->isReference(index.row()) )
     {
         DelegatButton *button = static_cast<DelegatButton*>(editor);
-            model->setData(index, QVariant(button->text()));
+        MySqlField fieldata = button->getCurrentFieldDAta();
+        recorddata->setValue(index.row(),fieldata.value());
+        if(fieldata.alterField().size() > 0)
+            recorddata->setAlterData(index.row(),fieldata.alterData());
         return ;
     }
 
@@ -121,13 +165,13 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     case QVariant::Date:{
         QDateEdit* dataedit = static_cast<QDateEdit*>(editor);                  /// класс widget преобразуется в реальный класс
         Q_ASSERT(dataedit);
-        model->setData(index, dataedit->date());                                /// передать данные из редактора в модель
+        model->setRecordData(index, dataedit->date());                          /// передать данные из редактора в модель
         break;
     }
     case QVariant::String:{
         QLineEdit* lineedit = static_cast<QLineEdit*>(editor);
         Q_ASSERT(lineedit);
-        model->setData(index, QVariant(lineedit->text()));
+        model->setRecordData(index, QVariant(lineedit->text()));
         break;
     }
     case QVariant::Int:{
@@ -135,7 +179,7 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         Q_ASSERT(lineedit);
         bool isnum;
         int num = lineedit->text().toInt(&isnum);
-        if(isnum) model->setData(index, num);
+        if(isnum) model->setRecordData(index, num);
         break;
     }
     default: QStyledItemDelegate::setModelData(editor, model, index);

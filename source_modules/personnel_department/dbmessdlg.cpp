@@ -64,6 +64,11 @@ void dbMessDlg::showdbmess(QSqlError lasterror)
     exec();
 }
 
+void dbMessDlg::setAdditionText(QString text)
+{
+    ui->additionlabel->setText(text);
+}
+
 void dbMessDlg::on_OkButton_clicked()
 {
     done(0);

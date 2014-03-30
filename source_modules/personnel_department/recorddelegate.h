@@ -25,7 +25,9 @@
 #include <QApplication>
 
 #include "messdlg.h"
+#include "dbmessdlg.h"
 #include "subtablewidget.h"
+#include "MyTable/mysqlrecord.h"
 
 #include <QPushButton>
 #include <QTableView>
@@ -38,21 +40,22 @@ class DelegatButton : public QPushButton
 {
     Q_OBJECT
 public:
-    DelegatButton(MyTable *table, QWidget *parent):
+    DelegatButton(QSqlQueryModel *model, const MySqlField &_field,
+                  QVariant initialvalue, QWidget *parent):
         QPushButton(parent)
     {
-        subtabledlg = new SubTableWidget(this);
-
+        field = _field;
+        querymodel = model;
+        subtableshov = false;
+        subtabledlg  = new SubTableWidget(this);
+        subtabledlg->setQueryModel(model);
+        subtabledlg->setDisplayMode(false,false,false,false,Qt::NoFocus);
         QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
                          this,        &DelegatButton:: update);
-        subtabledlg->setTable(subtable);
+        subtablecurrentrow = 0;
+        this->setText(initialvalue.toString());
     }
 
-    void updateDate(){                                                          /// перезаполучить данные у виджета субтаблицы
-        if(subtable == 0) return;
-        QVariant value = subtable->getCurrentRecordFieldDisplayedInEditorValue();
-        this->setText(value.toString());
-    }
     void mouseReleaseEvent(QMouseEvent * event){                                /// отобразить виджет субтаблицы при отпускани кнопки
         showSubtable();
     }
@@ -68,6 +71,7 @@ public:
                   this->width(), this->height());
        painter.drawText(rect,this->text());                                     /// вывести текст
     }
+
     void showEvent(QShowEvent *event){
         QPushButton::showEvent(event);
         showSubtable();
@@ -75,7 +79,7 @@ public:
 
     void showSubtable()
     {
-        if(subtableshov || subtable == 0)
+        if(subtableshov)
         {
             this->close();
             subtabledlg->hide();
@@ -92,21 +96,40 @@ public:
         subtableshov = true;
     }
 
+    MySqlField getCurrentFieldDAta(){return field;}
+    void setcurrentrow(int row){subtablecurrentrow = row; subtabledlg->setRow(row);}
 private slots:
-    void update(){updateDate(), this->repaint();}
+    void update(int row)
+    {
+        subtablecurrentrow = row;
+        querymodel->query().seek(subtablecurrentrow);
+        field.setValue(querymodel->query().value(0) );
+
+        if(field.alterField().size() > 0)
+        {
+            field.setAlterData( querymodel->query().value(field.alterField()) );
+            this->setText(field.alterData().toString());
+        }
+        else
+            this->setText(field.value().toString());
+
+        this->repaint();
+    }
 private:
-    SubTableWidget *subtabledlg;
-    MyTable        *subtable;
-    bool subtableshov;
+    SubTableWidget *subtabledlg; /// окно для отображения слинкованной таблицы
+    QSqlQueryModel *querymodel;  /// модель, отображаемая в окне
+    MySqlField     field;
+    bool subtableshov;           /// состояние видимости окна
+    int subtablecurrentrow;      /// текущая выделенная строка в слинкованной таблице
 };
 
 class RecordDelegate : public QStyledItemDelegate
 {
 public:
-    RecordDelegate(QObject * parent = 0);
+    RecordDelegate(QString connectname, MySqlRecord *record, QObject * parent = 0);
     ~ RecordDelegate();
 
-    void setTable(MyTable* _table);
+    void initDelegate();/// инициализация данных
 
     QWidget *createEditor(QWidget * parent, const QStyleOptionViewItem & option,/// метод создает редактор для каждого элемента модели
                           const QModelIndex & index) const;
@@ -116,7 +139,9 @@ public:
     void	paint(QPainter * painter, const QStyleOptionViewItem & option,
                   const QModelIndex & index) const;
 private:
-   MyTable *table;
+   MySqlRecord*  recorddata;
+   QMap<int,QSqlQueryModel*> querylist; /// запросы на получение данных суб таблиц
+   QString connectionname;
 };
 
 #endif // RECORDDELEGATE_H

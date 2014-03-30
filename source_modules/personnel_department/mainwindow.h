@@ -19,14 +19,16 @@
 /// виджет для субтаблиц
 #include "subtablewidget.h"
 
-#include "editrecordmodel.h"
 #include "dialogeditrecord.h"
-//#include "wowsqlmodel.h"
 #include "messdlg.h"
 #include "dbmessdlg.h"
 #include "authorizdlg.h"
 
-#include "mytable.h"
+#include "MyTable/myinfoscheme.h"
+#include "MyTable/mytable.h"
+
+#include "MyTable/myeditrecordmodel.h"
+#include "MyTable/mytablemodel.h"
 
 enum ModeSwitchingTable{BUTTONMODE, MOUSEMODE};                                 /// режим переключения между таблицами
 
@@ -47,7 +49,7 @@ public:
 
 private slots:
     void refresh_menu();                                                        /// обновить меню
-    void set_current_table(Tables table, ModeSwitchingTable mode);                                       /// установить таблицу
+    void set_current_table(Tables table, ModeSwitchingTable mode);              /// установить таблицу
 
     /// слоты - обработчики событий виджетов
     void on_tableView_doubleClicked(const QModelIndex &index);
@@ -71,7 +73,7 @@ private:
 
     QSplashScreen*          splashwindow;                                       /// загрузочный экран
     /// дополнительные окна
-    DialogEditRecord        dlgrecordedit;                                      /// редактор записи
+    DialogEditRecord*       dlgrecordedit;                                      /// редактор записи
     AuthorizDlg             authorizedlg;                                       /// авторизационное окно
     MessDlg                 messdlg;                                            /// диалог для вывода сообщения системы
     dbMessDlg               dbmessdlg;                                          /// диалог для вывода сообщеня БД
@@ -93,17 +95,20 @@ private:
     QString                 connectionname;                                     /// имя для получения подключения к СУБД
     Tables                  currenttable;                                       /// активная таблица
 
+    /// источник метаданных
+    MyInfoScheme* metadatasource;
+    /// модель данных для отобраения таблицы
+    MyTableModel* tablemodel;
     /// Таблицы
     MyTable *globaltable;
 
-    MyTable specialitytable;
-    MyTable grouptable;
-    MyTable studenttable;
+    MyTable* specialitytable;
+    MyTable* grouptable;
+    MyTable* studenttable;
 
-    MyTable citizenship;
+    MyTable* citizenship;
 
     QSettings*              setting;                                            /// запись/чтение параметров приложения
-
 };
 
 #endif // MAINWINDOW_H

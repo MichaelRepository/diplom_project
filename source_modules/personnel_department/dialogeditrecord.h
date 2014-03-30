@@ -5,7 +5,7 @@
 #include <QDate>
 #include <QSql>
 
-#include "editrecordmodel.h"
+#include "MyTable/myeditrecordmodel.h"
 #include "recorddelegate.h"
 #include "subtablewidget.h"
 
@@ -18,10 +18,10 @@ class DialogEditRecord : public QDialog
     Q_OBJECT
 
 public:
-    explicit DialogEditRecord(QWidget *parent = 0);
+    explicit DialogEditRecord(QString connectname, QWidget *parent = 0);
     ~DialogEditRecord();
 
-    void setTable(MyTable *_table);                                             /// передать ссылку на таблицу
+    void setRecord(MySqlRecord*  record);                                       /// передать ссылку на таблицу
     void showEvent(QShowEvent *event);
 
 private slots:
@@ -31,7 +31,9 @@ private slots:
 private:
     void closeEvent(QCloseEvent *evnt);
     Ui::DialogEditRecord *ui;
-    MyTable *table;
+    MySqlRecord*  recorddata;
+    EditRecordModel* recordmodel;
+    QString connectionname;
 };
 
 #endif // DIALOGEDITRECORD_H

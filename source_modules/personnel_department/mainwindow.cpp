@@ -71,7 +71,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     header = new QSpreadsheetHeaderView(Qt::Horizontal, this);                  /// установка собственного заголовка для столбцов
     header->setHighlightSections(true);
-    ui->tableView->setHorizontalHeader(header);
 
     /// создание контекстного меню таблицы
     Table_record_edit   = new QAction(QIcon(":/svg/edit-icon.svg"), "Изменить запись", this);
@@ -96,139 +95,124 @@ MainWindow::~MainWindow()
 
 void MainWindow::initTables()
 {
-    QStringList headerList;
-    QMap <QString,QString> validatorsdata;
-    QStringList noeditablefields;
-    QStringList editorkeys;
+    /// создание источника метаданных
+    metadatasource = new MyInfoScheme(connectionname, this);
+    if(metadatasource->isError() )
+    {
+        dbmessdlg.setAdditionText("Приложение будет закрыто");
+        dbmessdlg.showdbmess(metadatasource->lastQueryError());
+        exit(0);
+    }
+    /// создание таблиц
+    specialitytable = new MyTable(metadatasource,connectionname);
+    if(specialitytable->lastSqlError().isValid())
+    {
+        dbmessdlg.setAdditionText("Приложение будет закрыто");
+        dbmessdlg.showdbmess(specialitytable->lastSqlError());
+        exit(0);
+    }
+    grouptable      = new MyTable(metadatasource,connectionname);
+    if(grouptable->lastSqlError().isValid())
+    {
+        dbmessdlg.setAdditionText("Приложение будет закрыто");
+        dbmessdlg.showdbmess(grouptable->lastSqlError());
+        exit(0);
+    }
+    studenttable    = new MyTable(metadatasource,connectionname);
+    if(studenttable->lastSqlError().isValid())
+    {
+        dbmessdlg.setAdditionText("Приложение будет закрыто");
+        dbmessdlg.showdbmess(studenttable->lastSqlError());
+        exit(0);
+    }
+    citizenship     = new MyTable(metadatasource,connectionname);
+    if(citizenship->lastSqlError().isValid())
+    {
+        dbmessdlg.setAdditionText("Приложение будет закрыто");
+        dbmessdlg.showdbmess(citizenship->lastSqlError());
+        exit(0);
+    }
+    /// редактор записи
+    dlgrecordedit   = new DialogEditRecord(connectionname,this);
+    /// модель данных таблицы
+    tablemodel      = new MyTableModel(this);
+
 /// подготовить таблицу - специальности
-    specialitytable.tablename = "speciality";
-    specialitytable.setConnectionName(connectionname);
-    specialitytable.setSelect ("* FROM speciality ");
-    specialitytable.setWhere  ("");
-    specialitytable.setOrderBy("idspeciality");
-    headerList << "Шифр"
-               << "Аббревиатура"
-               << "Наименование"
-               << "Период обучения"
-               << "Базируется на"
-               << "Специализация";
-    editorkeys << "idspeciality";
+    specialitytable->tablename = "speciality";
+    specialitytable->appendField("idspeciality",     "speciality", false, true);
+    specialitytable->appendField("abbreviation",     "speciality", true, true);
+    specialitytable->appendField("specialityname",   "speciality", true, true);
+    specialitytable->appendField("periodeducation",  "speciality", true, true);
+    specialitytable->appendField("basedon",          "speciality", true, true);
+    specialitytable->appendField("specialization",   "speciality", true, true);
+    if(!specialitytable->initializeTable())
+    {
+        messdlg.settitl("Ошибка инициализации данных");
+        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Специальность>");
+        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
+                        "Приложение будет закрыто");
+        messdlg.exec();
+        exit(0);
+    }
 
-    validatorsdata.insert("idspeciality",   "\\d{1,6}");
-    validatorsdata.insert("abbreviation",   ".*");
-    validatorsdata.insert("name",           "[\\w\\s]{1,50}");
-    validatorsdata.insert("periodeducation","\\d{1,3}");
-    validatorsdata.insert("basedon",        "[\\w\\s]{1,100}");
-    validatorsdata.insert("specialization", "[\\w\\s]{1,100}");
-
-    specialitytable.setAlterFieldsName(headerList);
-    specialitytable.setEditorKeyFields(editorkeys);
-    specialitytable.setFieldValidatorsData(validatorsdata);
-    headerList.clear();
-    editorkeys.clear();
-    validatorsdata.clear();
 /// подготовить таблицу - группы
-    grouptable.tablename = "groups";
-    grouptable.setConnectionName(connectionname);
-    grouptable.setSelect ("* FROM groups ");
-    grouptable.setWhere  ("speciality = ? ");
-    grouptable.setOrderBy("idgroup");
-    headerList << "#"
-               << "Специальность"
-               << "Наименование"
-               << "Год формирования"
-               << "Форма обуч."
-               << "Бюджет"
-               << "Курс";
-    grouptable.setAlterFieldsName(headerList);
-    headerList.clear();
+    grouptable->tablename = "groups";
+    grouptable->appendField("idgroup",      "groups", false, true);
+    grouptable->appendField("speciality",   "groups", true,  true);
+    grouptable->appendField("groupname",    "groups", true,  true);
+    grouptable->appendField("yearformation","groups", true,  true);
+    grouptable->appendField("form",         "groups", true,  true);
+    grouptable->appendField("budget",       "groups", true,  true);
+    if(!grouptable->initializeTable())
+    {
+        messdlg.settitl("Ошибка инициализации данных");
+        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Группа>");
+        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
+                        "Приложение будет закрыто");
+        messdlg.exec();
+        exit(0);
+    }
+
 /// подготовить таблицу - студенты
-    studenttable.tablename = "student";
-    studenttable.setConnectionName(connectionname);    
-    studenttable.setSelect("student.subject, "
-                           "student.numbertestbook, "
-                           "subject.surname, "
-                           "subject.name, "
-                           "subject.patronymic, "
-                           "subject.sex, "
-                           "groups.name AS groupname, "
-                           "groups.course, "
-                           "groups.form, "
-                           "groups.budget, "
-                           "subject.datebirth, "
-                           "subject.placebirth, "
-                           "'...' AS citizenship, "
-                           "'...' AS residence, "
-                           "'...' AS passports, "
-                           "'...' AS represent, "
-                           "'...' AS education, "
-                           "'...' AS privileges, "
-                           "'...' AS moreinf "
-                           "FROM student "
-                           "LEFT JOIN groups  ON (student.group = groups.idgroup) "
-                           "LEFT JOIN subject ON (student.subject = subject.idsubject) "
-                           );
-    studenttable.setWhere("student.group = ?");
-    studenttable.setOrderBy("subject");
-    noeditablefields << "subject"
-                     << "citizenship"
-                     << "residence"
-                     << "passports"
-                     << "represent"
-                     << "represent"
-                     << "education"
-                     << "privileges"
-                     << "moreinf"
-                     << "course"
-                     << "form"
-                     << "budget";
-    headerList << "#"
-               << "№ зачетки"
-               << "Фамилия"
-               << "Имя"
-               << "Отчество"
-               << "Пол"
-               << "Группа"
-               << "Курс"
-               << "Форма обучения"
-               << "Бюджет"
-               << "Дата рождения"
-               << "Место рождения"
-               << "Гражданство"
-               << "Проживание"
-               << "Паспорт"
-               << "Представители"
-               << "Образование"
-               << "Льготы"
-               << "Дополнительно";
-    editorkeys << "subject";
-    studenttable.setNoEditableFieldsList(noeditablefields);
-    studenttable.setAlterFieldsName(headerList);
-    studenttable.setEditorKeyFields(editorkeys);
+    studenttable->tablename = "student";
+    studenttable->appendField("subject",          "student", false, true);
+    studenttable->appendField("numbertestbook",   "student", true,  true);
+    studenttable->appendField("surname",          "subject", true,  true);
+    studenttable->appendField("name",             "subject", true,  true);
+    studenttable->appendField("patronymic",       "subject", true,  true);
+    studenttable->appendField("sex",              "subject", true,  true);
+    studenttable->appendField("groupname",        "groups",  false, true);
+    studenttable->appendField("course",           "groups",  false, true);
+    studenttable->appendField("budget",           "groups",  false, true);
+    studenttable->appendField("datebirth",        "subject", true,  true);
+    studenttable->appendField("placebirth",       "subject", true,  true);
+    studenttable->appendField("studentgroup",     "student", true,  false );
+    if(!studenttable->initializeTable())
+    {
+        messdlg.settitl("Ошибка инициализации данных");
+        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Студент>");
+        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
+                        "Приложение будет закрыто");
+        messdlg.exec();
+        exit(0);
+    }
 
 /// подготовить таблицу - список гражданств
-    citizenship.tablename = "citizenshipname";
-    citizenship.setConnectionName(connectionname);
-    citizenship.setSelect("DISTINCT idcitizenship, citizenshipname "
-                          "FROM citizenshiplist "
-                          "INNER JOIN citizenshipforsubject "
-                          "ON ( citizenshipforsubject.citizenship = citizenshiplist.idcitizenship)");
-    citizenship.setWhere("citizenshipforsubject.subject = ?");
-    citizenship.setOrderBy("idcitizenship");
-    headerList << "#" << "Гражданство";
-    citizenship.setAlterFieldsName(headerList);
-    headerList.clear();
-
-    /// формирование списка внешних ключей для каждой таблицы
-    QMap<QString,QPair<MyTable*,QString> > foreignkeys;
-    /// для таблицы - студеты
-    foreignkeys.insert(QString("citizenship"),qMakePair(&citizenship,QString("idcitizenship") ) );
-    studenttable.setForeignKeys(foreignkeys);
-    foreignkeys.clear();
+    citizenship->tablename = "citizenshiplist";
+    citizenship->appendField("idcitizenship",   "citizenshiplist", false, true);
+    citizenship->appendField("citizenshipname", "citizenshiplist", false, true);
+    if(!citizenship->initializeTable())
+    {
+        messdlg.settitl("Ошибка инициализации данных");
+        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Гражданство>");
+        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
+                        "Приложение будет закрыто");
+        messdlg.exec();
+        exit(0);
+    }
 
 /// ВАЖНО - установка глобальной таблицы
-    globaltable = &specialitytable;
-
+    globaltable = specialitytable;
 }
 
 void MainWindow::init_sys()
@@ -238,8 +222,8 @@ void MainWindow::init_sys()
     pixmap.scaledToHeight (100,  Qt::SmoothTransformation);
     pixmap.scaledToWidth  (100,  Qt::SmoothTransformation);
     splashwindow = new QSplashScreen(pixmap);
-    splashwindow->setWindowFlags(Qt::SplashScreen | Qt::FramelessWindowHint |
-                                 Qt::WindowStaysOnTopHint);
+    splashwindow->setWindowFlags(Qt::SplashScreen | Qt::FramelessWindowHint /*|
+                                 Qt::WindowStaysOnTopHint*/);
     splashwindow->show();
     splashwindow->showMessage("Start");
     splashwindow->setEnabled(false);                                            /// делаю окно неактивным, чтобы при клике окно не закрывалось
@@ -259,6 +243,7 @@ void MainWindow::init_sys()
     /// загрузка из файла
     setting->beginGroup("SqlDatabase");
     db.setHostName     (setting->value("HostName",      "").toString());
+    db.setPort         (setting->value("Port",          "").toInt());
     db.setDatabaseName (setting->value("DatabaseName",  "").toString());
     db.setUserName     (setting->value("UserName",      "").toString());
     db.setPassword     (setting->value("Password",      "").toString());
@@ -285,8 +270,6 @@ void MainWindow::init_sys()
 
     initTables();                                                               /// ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ
     set_current_table(SPECIALITY, BUTTONMODE);                                  /// установить текущую таблицу
-
-
 
     splashwindow->finish(this);
     this->show();
@@ -326,7 +309,7 @@ void MainWindow::refresh_menu()
     /// определить число выделенных записей активной таблицы
     int countselectedrows = ui->tableView->selectionModel()->selectedRows().size();
     bool state = (countselectedrows == 1);
-    //УСТАНОВИТЬ ТЕКУЩУЮ СТРОКУ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
+    ///УСТАНОВИТЬ ТЕКУЩУЮ СТРОКУ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
     if(state) globaltable->setCurrentRow(ui->tableView->selectionModel()->selectedRows().first().row());
     /// переключить состояние кнопок и элементов контекстного меню, зависимых от числа выделенных записей
     ui->Edit_button1->setEnabled(state);
@@ -342,45 +325,61 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
     /// формирование запросов, относительно текущей таблицы
     switch(table){
     case SPECIALITY:
-        specialitytable.execQuery(true,false,false,true);
-        globaltable = &specialitytable;
+        if(!specialitytable->updateData())
+        {
+            if(specialitytable->lastSqlError().isValid()){
+                dbmessdlg.showdbmess(specialitytable->lastSqlError());
+                return ;
+            }
+        }
+        globaltable = specialitytable;
         break;
-    case GROUP:       
-        if(mode == BUTTONMODE)
-            grouptable.execQuery(true,false,false,true);
+    case GROUP:
+        if(!grouptable->updateData())
+        {
+            if(grouptable->lastSqlError().isValid()){
+                dbmessdlg.showdbmess(grouptable->lastSqlError());
+                return ;
+            }
+        }
+        /*if(mode == BUTTONMODE)
+            grouptable->createSelectQuery(false,false,true);
         else{
             QVariantList bindvalues;
-            /* можно и так сделать
-            grouptable.setWhere("WHERE speciality = ? ");
-            */
             bindvalues << specialitytable.getCurrentRecordFieldValue("idspeciality");
-            grouptable.bindValues(bindvalues);
-            grouptable.execQuery(true,true,false,true);
-        }
-        globaltable = &grouptable;
+            grouptable->bindValues(bindvalues);
+            grouptable->createSelectQuery(true,false,true);
+        }*/
+        globaltable = grouptable;
         break;
     case STUDENT:
-        if(mode == BUTTONMODE)
-            studenttable.execQuery(true,false,false,true);
+       if(!studenttable->updateData())
+       {
+           if(studenttable->lastSqlError().isValid()){
+               dbmessdlg.showdbmess(studenttable->lastSqlError());
+               return ;
+           }
+       }
+       /* if(mode == BUTTONMODE)
+            studenttable->createSelectQuery(false,false,true);
         else{
             QVariantList bindvalues;
-            /* можно и так сделать
-            grouptable.setWhere("WHERE student.group = ?");
-            */
-            bindvalues << grouptable.getCurrentRecordFieldValue("idgroup");
-            studenttable.bindValues(bindvalues);
-            studenttable.execQuery(true,true,false,true);
-        }
-        globaltable = &studenttable;
+            bindvalues << grouptable->getCurrentRecordFieldValue("idgroup");
+            studenttable->bindValues(bindvalues);
+            studenttable->createSelectQuery(true,false,true);
+        }*/
+        globaltable = studenttable;
         break;
     }
 
     currenttable = table;
-
-    globaltable->displayTable(ui->tableView);
+    tablemodel->setTableObject(globaltable);
+    ui->tableView->setModel(tablemodel);
+    ui->tableView->setHorizontalHeader(header);
+    ui->tableView->resizeColumnsToContents();
+    ui->tableView->resizeRowsToContents();
     globaltable->setCurrentRow(-1);
-    globaltable->displayTable(ui->tableView);
-
+    header->show();
     /// обработка выделения строк
     QObject::connect (ui->tableView->selectionModel(), &QItemSelectionModel::selectionChanged,
                       this,                            &MainWindow::tableView_items_selected,
@@ -395,14 +394,30 @@ void MainWindow::on_tableView_doubleClicked(const QModelIndex &index)
         return ;
     Tables nexttable;
 
-    //УСТАНОВИТЬ ВЫДЕЛЕННУЮ СТРОКУ КАК ТЕКУЩУЮ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
+    ///УСТАНОВИТЬ ВЫДЕЛЕННУЮ СТРОКУ КАК ТЕКУЩУЮ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
     globaltable->setCurrentRow(ui->tableView->selectionModel()->selectedRows().first().row());
 
     switch(currenttable){
-    case SPECIALITY: nexttable = GROUP;
+    case SPECIALITY:{
+        nexttable = GROUP;
+        int currecord = specialitytable->getCurrentRowIndex();
+        QString filtervalue = specialitytable->getFieldValue(currecord,"idspeciality").toString();
+        grouptable->setFilterForField("speciality", filtervalue);
+        grouptable->setFilterActivity(true);
         break;
-    case GROUP: nexttable = STUDENT;
+    }
+    case GROUP:{
+        nexttable = STUDENT;
+        int currecord = grouptable->getCurrentRowIndex();
+        QString filtervalue = grouptable->getFieldValue(currecord,"idgroup").toString();
+        studenttable->setFilterForTable("student.studentgroup = "+filtervalue);
+        studenttable->setFilterActivity(true);
+        /*
+        QString filtervalue = grouptable->getCurrentRecordFieldValue("groupname").toString();
+        studenttable->setFilterForField("groupname", filtervalue);
+        */
         break;
+    }
     }
 
     set_current_table(nexttable, MOUSEMODE);                                    /// переключение таблиц
@@ -425,13 +440,14 @@ void MainWindow::on_Switch_table_stud_button_clicked()
 
 void MainWindow::on_tableView_clicked(const QModelIndex &index)
 {
+    /*
     globaltable->setCurrentRow(index.row());
     if(currenttable != STUDENT)   return ;                                      /// только для таблицы студенты
     MyTable* subtable;
     if(!globaltable->isForeignKey(index.column() ) ) return;
     subtable = globaltable->getForeignTable(index.column() );
     if(subtable == 0) return;
-
+*/
 
     /**
         танец с бубном:
@@ -446,7 +462,7 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
         >решение: получение координат visualRect иперемещение их в середину виджета,
          путём увеличения x на величину w, а y на h
     **/
-
+/*
     QRect cell = ui->tableView->visualRect(index);
     QPoint pos(cell.x(),cell.y());
     QPoint pos1(pos.x()+cell.width()/2,pos.y()+cell.height()/2);
@@ -470,13 +486,13 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
     QVariantList bindvalues;
     bindvalues << globaltable->getCurrentRecordFieldValue(0);
     subtable->bindValues(bindvalues);
-    subtable->execQuery(true,true,false,true);
+    subtable->execSelect(true,false,true);
 
     subtablewidget->setTitleText(globaltable->tablename+"->"+subtable->tablename);
     subtablewidget->setTable(subtable);
     subtablewidget->move(pos);
     subtablewidget->show();
-
+*/
 
 }
 
@@ -497,11 +513,16 @@ void MainWindow::remove_records()                                               
 
 void MainWindow::edit_records()                                                 /// изменить записи
 {
-    dlgrecordedit.setTable(globaltable);
-    int res = dlgrecordedit.exec();
+    dlgrecordedit->setRecord(globaltable->getRecord(globaltable->getCurrentRowIndex() ) );
+    int res = dlgrecordedit->exec();
     if(res == 1)
-        globaltable->applyEditing();
-    globaltable->updateData();
+    {
+        if(!globaltable->setUpdateDataFields())
+        {
+            dbmessdlg.showdbmess(globaltable->lastSqlError());
+        }
+        globaltable->updateData();
+    }
 /**
     /// определить выбранную для редактирования запись
     QModelIndexList rowslist = ui->tableView->selectionModel()->selectedRows(0);/// получить список всех строк в которых выделен 0-й столбец

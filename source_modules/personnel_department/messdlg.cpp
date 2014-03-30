@@ -5,8 +5,7 @@ MessDlg::MessDlg(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::MessDlg)
 {
-    this->setWindowFlags(Qt::Popup | Qt::Window);
-    //this->setWindowFlags(Qt::FramelessWindowHint );
+    setWindowFlags(Qt::Dialog | Qt::WindowStaysOnTopHint);
     ui->setupUi(this);
 }
 

@@ -1,4 +1,4 @@
-#include "editrecordmodel.h"
+#include "myeditrecordmodel.h"
 
 EditRecordModel::EditRecordModel(QObject *parent) :
     QAbstractTableModel(parent){
@@ -10,19 +10,16 @@ EditRecordModel::~EditRecordModel()
 
 }
 
-void EditRecordModel::setData(QSqlRecord *record)
+void EditRecordModel::setRecordData(MySqlRecord *record)
 {
+    this->beginResetModel();
     recorddata = record;
-}
-
-void EditRecordModel::setAlterNames(QStringList *list)
-{
-    alternames = list;
+    this->endResetModel();
 }
 
 int EditRecordModel::columnCount(const QModelIndex &parent) const
 {
-    if(parent.isValid()) return 0;                                              /// вернуть число столбцов если индекс родительский (невалидный)
+    if(parent.isValid()) return 0;
     return 2;
 }
 
@@ -44,13 +41,12 @@ QVariant EditRecordModel::data(const QModelIndex &index, int role) const
         switch(index.column())
         {
         case 0:{                                                                /// название атрибута
-            if(role == Qt::DisplayRole && index.row() < alternames->size())
-                return QVariant( (*alternames)[index.row()] );                  /// отобразить альтернативное имя
-            else
-                return recorddata->field(index.row()).name();                   /// отобразить рельное имя
+            return QVariant( recorddata->alterNameOfField(index.row()));        /// отобразить альтернативное имя
         }
         case 1:{                                                                /// значение атрибута
-                return recorddata->field(index.row()).value();
+                if(recorddata->alterField(index.row()).size() > 0)
+                    return recorddata->alterData(index.row());
+                return recorddata->value(index.row());
         }
         default: return QVariant();
         }
@@ -65,7 +61,7 @@ QVariant EditRecordModel::data(const QModelIndex &index, int role) const
     }
 }
 
-bool EditRecordModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool EditRecordModel::setRecordData(const QModelIndex &index, const QVariant &value, int role)
 {
     if(!index.isValid() || role != Qt::EditRole) return false;
     //recorddata->field(index.row()).setReadOnly(false);
@@ -84,7 +80,6 @@ QVariant EditRecordModel::headerData(int section, Qt::Orientation orientation, i
         default:    return QVariant();
         }
     }
-    return section + 1;
 }
 
 Qt::ItemFlags EditRecordModel::flags(const QModelIndex &index) const

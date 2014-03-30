@@ -23,8 +23,8 @@ AuthorizDlg::AuthorizDlg(QWidget *parent) :
     setWindowFlags(Qt::Dialog | /*Qt::WindowTitleHint |*/ Qt::WindowStaysOnTopHint);
 
     /// установка валидатора для полей ввода
-    /// используется одинаковый валидатор как для логина, так и для пароля
-    QRegExp regexp("\\w+");                                                     /// вводить, только слово
+    /// используется одинаковый валидатор для логина и пароля
+    QRegExp regexp("\\w+");
     QValidator* validator = new QRegExpValidator(regexp,this);
     ui->lineEdit->  setValidator(validator);
     ui->lineEdit_2->setValidator(validator);
