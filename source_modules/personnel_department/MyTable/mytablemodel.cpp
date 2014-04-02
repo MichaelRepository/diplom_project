@@ -17,9 +17,15 @@ void MyTableModel::setTableObject(MyTable *tableobj)
     endResetModel();
 }
 
+void MyTableModel::refresh()
+{
+    beginResetModel();
+    endResetModel();
+}
+
 int MyTableModel::columnCount(const QModelIndex &parent) const
 {
-    return table->getFieldsCount();
+    return table->getDisplayedFieldsCount();
 }
 
 int MyTableModel::rowCount(const QModelIndex &parent) const
@@ -34,7 +40,7 @@ QVariant MyTableModel::data(const QModelIndex &index, int role) const
 
     switch (role) {
     case Qt::DisplayRole:
-        return (table->getCellValue(index.row(), index.column()) );
+        return (table->displayCellValue(index.row(), index.column()) );
     default: return QVariant();
     }
 
@@ -44,7 +50,7 @@ QVariant MyTableModel::headerData(int section, Qt::Orientation orientation, int 
 {
     if(role != Qt::DisplayRole || orientation != Qt::Horizontal) return QVariant();
 
-    return table->getFieldName(section);
+    return table->displayFieldName(section);
 }
 
 bool MyTableModel::setRecordData(const QModelIndex &index, const QVariant &value, int role)

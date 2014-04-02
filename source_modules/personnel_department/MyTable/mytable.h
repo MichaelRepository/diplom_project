@@ -4,6 +4,7 @@
 #include <QTableView>
 #include <QObject>
 #include <QtSql>
+#include <QtAlgorithms>
 
 #include "dbmessdlg.h"
 #include "myeditrecordmodel.h"
@@ -14,16 +15,48 @@ enum Tables{SPECIALITY, GROUP, STUDENT};                                        
 enum extraTables{CITIZENSHIPLIST, PRIVILEGESCATEGORY, SCHOOL, TYPESCHOOL,       /// справочники - таблицы категорий
                  TYPEEDUCATION};
 
+class MySubtable;
+
+class MyField{
+public:
+    MySubtable* table;                                                          /// таблица к которой относится поле
+    int realindex;                                                              /// реальный номер поля
+    int indexforviewer;                                                         /// номер  для вьювера
+    QString name;                                                               /// имя
+    QString altername;                                                          /// псевдоним
+    QString validator;                                                          /// валидатор
+    QString alterfield;                                                         /// альтернативное поле (отображаемое вместо него)
+    QString filter;                                                             /// фильтр
+    bool    isEditable;                                                         /// признак редактируемости
+    bool    isVisible;                                                          /// признак видимости в вьювере
+    MyDataReference reference;                                                  /// параметр - ссылка на внешнюю таблицу
+};
+
+class MySubtable{
+public:
+    QString                 name;                                               /// имя
+    QList<MyField*>         fields;                                             /// указатели на поля (сами поля хранятся списком в объекте - таблица)
+    QString                 primarykey;                                         /// ключевое поле
+    QList<MyDataOfKey>      foreignkeys;                                        /// внешние ключи
+    int editablefieldscount;                                                    /// число редактируемых полей
+};
+
 class MyTable{
 public:
-    QString     tablename;                                                      /// реальное имя таблицы нужно для FROM запроса
-
     MyTable(MyInfoScheme* metadatascheme, QString connectname);
-
-    void appendField(QString field,         QString table = "",
-                     bool editable = true,  bool visible = true);
+    void appendField(QString field, QString table, bool editable = true, bool visible = true);
 
     bool initializeTable();
+
+    QString  displayFieldAlterName  (int index);                                /// получить альтернативное имя поля
+    QString  displayFieldName       (int index);                                /// получить имя поля
+    QVariant displayCellValue       (int row, int col);                         /// получить значение ячейки таблицы
+    QVariant displayFieldValue      (int row, QString field);
+    int      getRecordsCount();                                                 /// получить число записей в таблице
+    int      getDisplayedFieldsCount();                                         /// количество полей
+
+    bool setUpdateDataFields();
+    bool setInsertDataFields();
 
     void setFilterForField(QString field, QString filter);                      /// фильтр для конкретного поля
     void setFilterForTable(QString str);                                        /// фильтр не привязанный к полю
@@ -31,58 +64,44 @@ public:
     void setCurrentRow (int index);
     bool updateData();                                                          /// запросить данные
 
-    bool setUpdateDataFields();
-    bool setInsertDataFields();
+    bool removeRecord(int row);                                                 /// удалить строку из таблицы
 
     bool     isFiltered();                                                      /// проверка активности фильтра
-    int      getRecordsCount();                                                 /// получить число записей в таблице
-    int      getFieldsCount();                                                  /// количество полей
-    QString  getFieldAlterName  (int col);                                      /// получить альтернативное имя поле
-    QString  getFieldName       (int col);                                      /// получить имя поля
-    QVariant getCellValue       (int row, int col);                             /// получить значение ячейки таблицы
-    QVariant getFieldValue      (int row, QString field);
     int      searchRecordByField(QString field, QVariant value);                /// получить номер строки по параметру поля
     int      getCurrentRowIndex();
     MySqlRecord *getRecord(int row);                                            /// получить запись (row присваевается как текущая строка)
-
+    MySqlRecord *getEmptyRecordForInsert();                                     /// получить пустую строку, которая будет использована для заполнения и вставки в таблицу
     QSqlError lastSqlError();
 
 private:
-    bool preparePrimaryKeysData(); /// получение первичных ключей для каждой субтаблицы
-    bool generateSelectQuery();
-    void generateUpdateQuery();/// генерируется списки полей, участвующие в запросе update и insert относительно каждой таблицы
-    bool prepareForeignKeysDataForTable(QString table);///  для каждой субтаблицы
-    bool prepareForeignKeysData();
+    bool contains        (QString field);
+    int  fieldRealIndexOf(QString field);
+    int  fieldViewUndexOf(QString field);
+    int  tableIndexOf    (QString table);                                       /// получить индекс субтаблицы
 
+    bool checkSubtables();                                                      /// проверить наличие субтаблиц в бд
+    bool prepareSubtables();                                                    /// получить PK и FK поля для субтаблиц
+    bool getExtendedDataOfFields();                                             /// получить дополнительные данные для полей
+
+    void generateSelectQuery();
 
     QSqlError sqlerror;
+    QSqlQuery tablequery;                                                       /// данные запроса для таблицы
 
     QString       connectionname;                                               /// имя подключения к БД
     MyInfoScheme* metadata;                                                     /// источник метаданных
-/// данные для выполнения SELECT запроса
-    QString       lastquerytext;                                                /// хранит текст последнего SELECT запроса для обновления данных таблицы
-/// общие данные для отображения таблицы в программе
+    QString       lastselecttext;                                               /// хранит текст последнего SELECT запроса для обновления данных таблицы
     int           currentrow;                                                   /// текущая строка таблицы
     QString       freeFilter;
     bool          filtered;
-    QStringList   subtable;                                                     /// список таблиц, входящих в состав данного объекта (без повторений)
-    QStringList   primarykeys;                                                  /// список первичных полей каждой таблицы (1ключ - 1таблица)!!!!
-    QMap<int,int> indexesofvisiblecolumns;                                      /// индексы отображаемых колонок (index, realnum)
-    QSqlQuery     tablequery;                                                   /// данные запроса для таблицы
-    QMap<QString, QStringList> fieldsforquery;                                  /// список полей для формирвоания запроса на обновление таблицы
 
-/// параметры полей
-    QStringList fieldlist;                                                      /// имя поля
-    QStringList tablenamelist;                                                  /// таблица поля (список таблиц, повторяются, т.к указаны для каждого поля)
-    QStringList alternamelist;                                                  /// альтернативное название поля
-    QStringList validatorlist;                                                  /// рег. выр. для валидатора
-    QStringList alterfields;                                                    /// альтернативные поля, выводимые вместо текущего
-    QStringList   filters;                                                      /// фильтр поля
-    QVector<bool> flagseditable;                                                /// флаги видимости в редакторе
-    QVector<bool> flagsvisible;                                                 /// флаги видимости
-    QMap<int,MyDataReference> references;                                       /// поле - ссылка на внешнюю таблицу (index, данные ссылки)
-/// данные для редактора записи таблицы
-    MySqlRecord     editablerecord;                                             /// рабочая копия редактируемой записи
+    QList<MyField>    fields;                                                   /// поля
+    QList<MySubtable> subtables;                                                /// составные таблицы
+
+    QList<MyField*>    fieldforviewer;                                          /// поля для вьювера
+    QList<MyField*>    fieldforeditor;                                          /// поля для редактора
+
+    MySqlRecord        editablerecord;                                          /// рабочая копия редактируемой записи
 
 };
 #endif // MYTABLE_H

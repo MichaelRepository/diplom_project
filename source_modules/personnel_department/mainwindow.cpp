@@ -138,8 +138,8 @@ void MainWindow::initTables()
     tablemodel      = new MyTableModel(this);
 
 /// подготовить таблицу - специальности
-    specialitytable->tablename = "speciality";
-    specialitytable->appendField("idspeciality",     "speciality", false, true);
+   // specialitytable->tablename = "speciality";
+    specialitytable->appendField("idspeciality",     "speciality", true, true);
     specialitytable->appendField("abbreviation",     "speciality", true, true);
     specialitytable->appendField("specialityname",   "speciality", true, true);
     specialitytable->appendField("periodeducation",  "speciality", true, true);
@@ -156,7 +156,7 @@ void MainWindow::initTables()
     }
 
 /// подготовить таблицу - группы
-    grouptable->tablename = "groups";
+   // grouptable->tablename = "groups";
     grouptable->appendField("idgroup",      "groups", false, true);
     grouptable->appendField("speciality",   "groups", true,  true);
     grouptable->appendField("groupname",    "groups", true,  true);
@@ -174,7 +174,7 @@ void MainWindow::initTables()
     }
 
 /// подготовить таблицу - студенты
-    studenttable->tablename = "student";
+    //studenttable->tablename = "student";
     studenttable->appendField("subject",          "student", false, true);
     studenttable->appendField("numbertestbook",   "student", true,  true);
     studenttable->appendField("surname",          "subject", true,  true);
@@ -198,7 +198,7 @@ void MainWindow::initTables()
     }
 
 /// подготовить таблицу - список гражданств
-    citizenship->tablename = "citizenshiplist";
+   // citizenship->tablename = "citizenshiplist";
     citizenship->appendField("idcitizenship",   "citizenshiplist", false, true);
     citizenship->appendField("citizenshipname", "citizenshiplist", false, true);
     if(!citizenship->initializeTable())
@@ -401,7 +401,7 @@ void MainWindow::on_tableView_doubleClicked(const QModelIndex &index)
     case SPECIALITY:{
         nexttable = GROUP;
         int currecord = specialitytable->getCurrentRowIndex();
-        QString filtervalue = specialitytable->getFieldValue(currecord,"idspeciality").toString();
+        QString filtervalue = specialitytable->displayFieldValue(currecord,"idspeciality").toString();
         grouptable->setFilterForField("speciality", filtervalue);
         grouptable->setFilterActivity(true);
         break;
@@ -409,7 +409,7 @@ void MainWindow::on_tableView_doubleClicked(const QModelIndex &index)
     case GROUP:{
         nexttable = STUDENT;
         int currecord = grouptable->getCurrentRowIndex();
-        QString filtervalue = grouptable->getFieldValue(currecord,"idgroup").toString();
+        QString filtervalue = grouptable->displayFieldValue(currecord,"idgroup").toString();
         studenttable->setFilterForTable("student.studentgroup = "+filtervalue);
         studenttable->setFilterActivity(true);
         /*
@@ -503,12 +503,27 @@ void MainWindow::tableView_items_selected()
 
 void MainWindow::add_new_record()                                               /// добавить запись
 {
-
+    dlgrecordedit->setRecord(globaltable->getEmptyRecordForInsert() );
+    int res = dlgrecordedit->exec();
+    if(res == 1)
+    {
+        if(!globaltable->setInsertDataFields())
+        {
+            dbmessdlg.showdbmess(globaltable->lastSqlError() );
+        }
+        globaltable->updateData();
+        tablemodel->refresh();
+    }
 }
 
 void MainWindow::remove_records()                                               /// удалить записи
 {
-
+    if(!globaltable->removeRecord(globaltable->getCurrentRowIndex() ))
+    {
+        // !!!
+    }
+    globaltable->updateData();
+    tablemodel->refresh();
 }
 
 void MainWindow::edit_records()                                                 /// изменить записи
@@ -522,6 +537,7 @@ void MainWindow::edit_records()                                                 
             dbmessdlg.showdbmess(globaltable->lastSqlError());
         }
         globaltable->updateData();
+        tablemodel->refresh();
     }
 /**
     /// определить выбранную для редактирования запись
@@ -697,7 +713,30 @@ void MainWindow::edit_records()                                                 
 **/
 }
 
+void MainWindow::refresh_table()
+{
+    if(globaltable->updateData())
+    {
+        dbmessdlg.showdbmess(globaltable->lastSqlError());
+    }
+}
+
 void MainWindow::on_Edit_button1_clicked()
 {
     edit_records();
+}
+
+void MainWindow::on_Refresh_button1_clicked()
+{
+    refresh_table();
+}
+
+void MainWindow::on_Add_button1_clicked()
+{
+    add_new_record();
+}
+
+void MainWindow::on_Delete_button1_clicked()
+{
+    remove_records();
 }

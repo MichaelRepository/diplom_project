@@ -8,83 +8,51 @@ MyTable::MyTable(MyInfoScheme *metadatascheme, QString connectname)
     connectionname = connectname;
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     sqlerror = db.lastError();
-    if(!db.open())
-    {
-        return;
-    }
+    if(!db.open()) return;
     tablequery = QSqlQuery(db);
     metadata = metadatascheme;
-
 }
 
 void MyTable::appendField(QString field, QString table, bool editable, bool visible)
 {
-    if(fieldlist.contains(field)) return; /// есть такое поле => проигнорировать
-    fieldlist.append(field);
-    filters.append("");
+    if(field.size() == 0 || table.size() == 0) return;
+    if(fieldRealIndexOf(field) != -1)          return;
+    int fieldindex = fields.size();
 
-    if(table != "")
+    MyField newField;
+    newField.name       = field;
+    newField.isVisible  = visible;
+    newField.isEditable = editable;
+    newField.realindex  = fieldindex;
+    if(visible) newField.indexforviewer = fieldforviewer.size();
+    fields.append(newField);
+    MyField* pfield = &fields[fieldindex];
+    if(editable) fieldforeditor.append(pfield);
+    if(visible)  fieldforviewer.append(pfield);
+
+    int subtableindex = tableIndexOf(table);
+    if(subtableindex == -1)
     {
-        tablenamelist.append(table);
-        if(!subtable.contains(table)) subtable.append(table);                   /// формируется список субтаблиц
+        subtables.append(MySubtable());                                         /// добавить новую субтаблицу, если такой еще небыло в списке
+        subtableindex = subtables.size()-1;
     }
-    else
-        tablenamelist.append(tablename);
-
-    flagseditable.append(editable);
-    flagsvisible.append(visible);
-    /// индексация отображаемых столбцов
-    /// index(num, real_num) num - это номер по которому на неё ссылаются
-    /// real_num - номер, который она занимает в таблице
-    if(visible) indexesofvisiblecolumns.insert(indexesofvisiblecolumns.size(),
-                                               fieldlist.size()-1);
-
+    subtables[subtableindex].name = table;                                      /// задать имя субтаблице
+    subtables[subtableindex].fields.append(pfield);                             /// добавить текщее поле в список полей субтаблицы
+    pfield->table = &subtables[subtableindex];
+    if(editable) ++subtables[subtableindex].editablefieldscount;                /// увеличить внутри субтабличный счетчик редактируемых записей
 }
 
 bool MyTable::initializeTable()
 {
-    /// проверка источника метаданных
-    if(metadata->isError()) return false;
-    /// проверка валидности таблицы
-    if(!metadata->tableIsValid(tablename)) return false;
+    if(metadata->isError())   return false;                                     /// проверка источника метаданных
+    if(!checkSubtables())     return false;                                     /// проверка валидности субтаблиц
+    if(fields.size() == 0)    return false;                                     /// проверка полей
 
-    /// очистка данных
-    if(fieldlist.size()      == 0) return false;
-    if(alternamelist.size()   > 0) alternamelist.clear();
-    if(validatorlist.size()   > 0) validatorlist.clear();
-    if(editablerecord.count() > 0) editablerecord.clear();
-    if(references.count()     > 0) references.clear();
-    lastquerytext = "";
-    filtered = false;
-
-    if(!preparePrimaryKeysData()) return false;
+    if(!prepareSubtables())         return false;                               /// инициализировать данные субтаблиц
+    if(!getExtendedDataOfFields())  return false;
 
     /// сформировать SELECT запрос
-    if(!generateSelectQuery()) return false;
-    /// получить список альтернативных имен для каждого поля +
-    /// валидатор + альтернативное поле
-    QStringList::iterator itrf = fieldlist.begin();
-    QStringList::iterator itrt = tablenamelist.begin();
-    while (itrf != fieldlist.end())
-    {
-        QString altername = metadata->getAlterName(*itrt,*itrf);
-        if(metadata->isError()) return false;
-        QString validator = metadata->getValidator(*itrt,*itrf);
-        if(metadata->isError()) return false;
-        QString alterfield = metadata->getAlterField(*itrt,*itrf);
-        if(metadata->isError()) return false;
-        alternamelist << altername;
-        validatorlist << validator;
-        alterfields   << alterfield;
-        ++itrf;
-        ++itrt;
-    }
-    /// генерация структуры для update и insert запросов
-    generateUpdateQuery();
-    /// генерация запросов для полей - ссылок
-    /// поля, которые являются ссылками на внешнюю таблицу в редакторе должны
-    /// отображать таблицу на которую они ссылаются
-    if(!prepareForeignKeysData()) return false;
+    generateSelectQuery();
 
     if(!updateData()) return false;
 
@@ -93,9 +61,8 @@ bool MyTable::initializeTable()
 
 void MyTable::setFilterForField(QString field, QString filter)
 {
-    int index = fieldlist.indexOf(field);
-    if(index != -1)
-        filters[index] = filter;
+    int index = fieldRealIndexOf(field);
+    if(index != -1) fields[index].filter = filter;
 }
 
 void MyTable::setFilterForTable(QString str)
@@ -117,16 +84,16 @@ int MyTable::getRecordsCount()
     return tablequery.size();
 }
 
-int MyTable::getFieldsCount()
+int MyTable::getDisplayedFieldsCount()
 {
     /// вернуть число видимых полей (столбцов)
-    return indexesofvisiblecolumns.size();
+    return fieldforviewer.size();
 }
 
 bool MyTable::updateData()
 {
 /// основной запрос
-    QString querytext = lastquerytext;
+    QString querytext = lastselecttext;
     if(filtered)
     {
         if(freeFilter.contains("WHERE",Qt::CaseInsensitive))
@@ -138,22 +105,19 @@ bool MyTable::updateData()
         else
             filtersection += " AND ";
 
-        QStringList::iterator itr;
+       QList<MyField>::const_iterator itr;
         int i = 0;
         int filteredfieldcount = 0;
-        for(itr = filters.begin(); itr != filters.end(); ++itr)
+        for(itr = fields.begin(); itr != fields.end(); ++itr)
         {
-            if((*itr).size() > 0)
+            if((*itr).filter.size() > 0)
             {
                 if(filteredfieldcount > 0) filtersection += " AND ";
-                QString field = fieldlist[i];
-                QString value = "'"+(*itr)+"'";
-                filtersection += field+" = "+value;
+                filtersection += (*itr).name+" = '"+(*itr).filter+"'";
                 ++filteredfieldcount;
             }
             ++i;
         }
-
 
         if(freeFilter.size() > 0)
         {
@@ -161,16 +125,14 @@ bool MyTable::updateData()
             filtersection += freeFilter;
         }
 
-        if(lastquerytext.contains("ORDER BY",Qt::CaseInsensitive))
+        if(lastselecttext.contains("ORDER BY",Qt::CaseInsensitive))
         {
-            int pos = lastquerytext.indexOf("ORDER BY",Qt::CaseInsensitive);
+            int pos = lastselecttext.indexOf("ORDER BY",Qt::CaseInsensitive);
             querytext.insert(pos, filtersection+" ");
         }
         else
             querytext += filtersection;
     }
-
-qDebug() << querytext;
 
     tablequery.prepare(querytext);
     if(!tablequery.exec() )
@@ -183,79 +145,175 @@ qDebug() << querytext;
 
 bool MyTable::setUpdateDataFields()
 {
-    if(fieldsforquery.size() == 0 || editablerecord.count() == 0) return false;
-    if(!tablequery.seek(currentrow)) return false;
-    QMap<QString,QStringList>::iterator itr;
+    if(!tablequery.seek(currentrow) ) return false;
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     if(!db.open()) return false;
-    QSqlQuery query(db);
-    int index = 0;
-    for(itr = fieldsforquery.begin(); itr != fieldsforquery.end(); ++itr)
-    {
-        QString querytext = "UPDATE "+itr.key()+" SET ";
-        QStringList::iterator itrl;
-        for(itrl = (*itr).begin(); itrl != (*itr).end(); ++itrl)
-        {
-            if(itrl != (*itr).begin()) querytext += " , ";
-            querytext += *itrl + " = '" + editablerecord.value(*itrl).toString() + "' ";
-        }
-        QString key = primarykeys[index];
-        querytext += " WHERE " + key + " = "+ tablequery.value(key).toString();
 
-        db.transaction();
-        if(!query.exec(querytext))
+    QStringList querylist;
+    QList<MySubtable>::const_iterator itrt;
+    for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
+    {
+        if((*itrt).editablefieldscount > 0)
         {
-            sqlerror = query.lastError();
+            int count = 0;
+            QString querytext = "UPDATE "+(*itrt).name+" SET ";
+            const QList<MyField*> fieldlist = (*itrt).fields;
+            QList<MyField*>::const_iterator itrlf;
+            for(itrlf = fieldlist.begin(); itrlf != fieldlist.end(); ++itrlf)
+            {
+                if((*itrlf)->isEditable)
+                {
+                    if(count > 0) querytext += " , ";
+                    querytext += (*itrlf)->name+" = '"+editablerecord.value((*itrlf)->name).toString()+"' ";
+                    ++count;
+                }
+            }
+            querytext += " WHERE "+(*itrt).primarykey+" = '"+tablequery.value((*itrt).primarykey).toString()+"' ";
+            querylist.append(querytext);
+        }
+    }
+    QSqlQuery query(db);
+    db.transaction();
+    QStringList::const_iterator itrl;
+    for(itrl = querylist.begin(); itrl != querylist.end(); ++itrl)
+    {
+        query.prepare(*itrl);
+        if(!query.exec())
+        {
             db.rollback();
             return false;
         }
-        db.commit();
-
-
-        ++index;
     }
+    db.commit();/// окончить транзакцию
     return true;
 }
 
 bool MyTable::setInsertDataFields()
 {
-    if(fieldsforquery.size() == 0 || editablerecord.count() == 0) return false;
-    if(!tablequery.seek(currentrow)) return false;
-    QMap<QString,QStringList>::iterator itr;
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     if(!db.open()) return false;
     QSqlQuery query(db);
-    int index = 0;
-    for(itr = fieldsforquery.begin(); itr != fieldsforquery.end(); ++itr)
+
+    QList<MySubtable*> insertionorder;/// список таблиц отсортированных по числу FK
+    QList<MySubtable>::iterator itrt;
+    /// перенести список таблиц
+    for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
     {
-        QString querytext = "INSERT INTO "+itr.key();
-        QString fieldssection;
-        QString valuessection;
-        QStringList::iterator itrl;
-        for(itrl = (*itr).begin(); itrl != (*itr).end(); ++itrl)
+        insertionorder.append(&(*itrt));
+    }
+
+    /// сортировать
+    QList<MySubtable*>::iterator itrt1;
+    QList<MySubtable*>::iterator itrt2;
+    for(itrt1 = insertionorder.begin(); itrt1 != insertionorder.end(); ++itrt1)
+    {
+        /// (10 - константа, ничего не значащая, главное, что она ВСЕГДА больше, чем реальное число FK в любой субтаблице из списка)
+        int mincountfk = 10;
+        QList<MySubtable*>::iterator itrt3 = insertionorder.end();
+        for(itrt2 = itrt1; itrt2 != insertionorder.end(); ++itrt2)
         {
-            if(itrl != (*itr).begin())
+            if(mincountfk > (*itrt2)->foreignkeys.size())
             {
-                fieldssection += " , ";
-                valuessection += " , ";
+                mincountfk = (*itrt2)->foreignkeys.size();
+                itrt3 = itrt2;
             }
-            fieldssection += *itrl;
-            valuessection += "'" + editablerecord.value(*itrl).toString() + "' ";
+        }
+        if(itrt3 != insertionorder.end())
+        {
+            MySubtable* table = *itrt1;
+            *itrt1 = *itrt3;
+            *itrt3 = table;
+        }
+    }
+
+    db.transaction();
+    /// сформировать insert запрос
+    QMap<QString, QVariant> PKvalues;
+    for(itrt1 = insertionorder.begin(); itrt1 != insertionorder.end(); ++itrt1)
+    {
+        QString querytext = "INSERT INTO "+(*itrt1)->name;
+        QStringList fieldssection;
+        QStringList valuessection;
+
+        const QList<MyField*>* tablefields = &((*itrt1)->fields);
+
+        QList<MyField*>::const_iterator itrf;
+        for(itrf = tablefields->begin(); itrf != tablefields->end(); ++itrf)
+        {
+            if((*itrf)->isEditable)
+            {
+                QVariant value;
+                value = editablerecord.value((*itrf)->name);
+                if(value.isValid() && value.toString().size() > 0)
+                {
+                    fieldssection.append( (*itrf)->name );
+                    valuessection.append( "'" + value.toString() + "' " );
+                }
+            }
         }
 
-        querytext += " (" + fieldssection + ") VALUES (" + valuessection + ") ";
-
-        db.transaction();
-        if(!query.exec(querytext))
+        /// проверка внешних ключевых полей
+        const QList<MyDataOfKey> *keys = &(*itrt1)->foreignkeys;
+        QList<MyDataOfKey>::const_iterator itrfk;
+        for(itrfk = keys->begin(); itrfk != keys->end(); ++itrfk)
         {
-            sqlerror = query.lastError();
+            QVariant value;
+            if(!fieldssection.contains((*itrfk).foreignkey) )                         /// ключевое поле не использовалось, нужно его использовать
+            {
+                value = PKvalues[(*itrfk).referencedtable];
+                if(value.isValid() && value.toString().size() > 0)
+                {
+                    fieldssection.append( (*itrfk).foreignkey );
+                    valuessection.append( "'" + value.toString() + "' " );
+                }
+                break;
+            }
+        }
+
+        if(fieldssection.size() > 0 && valuessection.size() > 0)
+        {
+            querytext += " (" + fieldssection.join(" , ") + ") VALUES (" + valuessection.join(" , ") + ") ";
+
+            if(!query.exec(querytext))
+            {
+                sqlerror = query.lastError();
+                db.rollback();
+                return false;
+            }
+            QVariant lastid = query.lastInsertId();
+            if(lastid.isValid())
+                PKvalues.insert((*itrt1)->name,lastid);                             /// получить значение id объекта последней вставленной строки
+        }
+
+    }
+
+    db.commit();
+    return true;
+}
+
+bool MyTable::removeRecord(int row)
+{
+    if(!tablequery.seek(row)){sqlerror = tablequery.lastError();  return false;}
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    if(!db.open()){sqlerror = db.lastError(); return false;}
+
+    db.transaction();
+    QList<MySubtable>::const_iterator itr;
+    int index = 0;
+    for(itr = subtables.begin(); itr != subtables.end(); ++itr)
+    {
+        QString querytex = "DELETE FROM "+(*itr).name+" WHERE "+(*itr).primarykey+" = ";
+        querytex += "'"+tablequery.value((*itr).primarykey).toString()+"'";
+        QSqlQuery query(db);
+        if(!query.exec(querytex) )
+        {
+            sqlerror = db.lastError();
             db.rollback();
             return false;
         }
-        db.commit();
-
         ++index;
     }
+    db.commit();
     return true;
 }
 
@@ -266,12 +324,11 @@ bool MyTable::isFiltered()
 
 int MyTable::searchRecordByField(QString field, QVariant value)
 {
-    if(!fieldlist.contains(field)) return -1;
+    if(fieldRealIndexOf(field) == -1) return -1;
     for(int i = 0; i < tablequery.size(); ++i)
     {
         tablequery.seek(i);
-        if(tablequery.value(field) == value)
-            return i;
+        if(tablequery.value(field) == value) return i;
     }
     return -1;
 }
@@ -288,24 +345,60 @@ MySqlRecord *MyTable::getRecord(int row)
     currentrow = row;                                                           /// автоматом текущая строка приравнивается значению row
     editablerecord.clear();
     QSqlRecord record = tablequery.record();
-    for(int i = 0; i < fieldlist.size(); ++i)
+    QList<MyField>::const_iterator itr;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
     {
-        if(flagseditable[i])
+        if((*itr).isEditable)
         {
-            MySqlField field(record.field(i));
-            field.setAlterName(alternamelist[i]);
-            field.setValidator(validatorlist[i]);
-            field.setEditable (flagseditable[i]);
-            field.setVisible  (flagsvisible [i]);
-            if(references.contains(i))
-                field.setReference(references[i]);
-            if(alterfields[i].size() > 0)
-                field.setAlterField(alterfields[i]);
+            MySqlField field(record.field((*itr).name) );
+            field.setAlterName((*itr).altername);
+            field.setValidator((*itr).validator);
+            field.setEditable ((*itr).isEditable);
+            field.setVisible  ((*itr).isVisible);
+            if((*itr).reference.sqltext.size() > 0)
+            {
+                field.setReference((*itr).reference);
+                field.setAlterField((*itr).alterfield);
+            }
             editablerecord.append(field);
         }
     }
-    qDebug() << editablerecord.fieldName(0);
+
     return &editablerecord;
+}
+
+MySqlRecord *MyTable::getEmptyRecordForInsert()
+{
+    /// сформировать данные для копии запрашиваемой строки
+    editablerecord.clear();
+    if(!tablequery.isSelect())
+    {
+        if(!tablequery.seek(0)) return &editablerecord;
+    }
+
+    QSqlRecord record = tablequery.record();
+    record.clearValues();
+    QList<MyField>::const_iterator itr;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
+    {
+        if((*itr).isEditable)
+        {
+            MySqlField field(record.field((*itr).name) );
+            field.setAlterName((*itr).altername);
+            field.setValidator((*itr).validator);
+            field.setEditable ((*itr).isEditable);
+            field.setVisible  ((*itr).isVisible);
+            if((*itr).reference.sqltext.size() > 0)
+            {
+                field.setReference((*itr).reference);
+                field.setAlterField((*itr).alterfield);
+            }
+            editablerecord.append(field);
+        }
+    }
+
+    return &editablerecord;
+
 }
 
 QSqlError MyTable::lastSqlError()
@@ -313,165 +406,214 @@ QSqlError MyTable::lastSqlError()
     return sqlerror;
 }
 
-QString MyTable::getFieldAlterName(int field)
+bool MyTable::contains(QString field)
 {
-    if(!indexesofvisiblecolumns.contains(field)) return QString();
-    /// получить реальный номер поля
-    int realindex = indexesofvisiblecolumns[field];
-    return alternamelist[realindex];
-}
-
-QString MyTable::getFieldName(int col)
-{
-    if(!indexesofvisiblecolumns.contains(col)) return QString();
-    /// получить реальный номер поля
-    int realindex = indexesofvisiblecolumns[col];
-        return fieldlist[realindex];
-}
-
-QVariant MyTable::getCellValue(int row, int col)
-{
-    if(!tablequery.seek(row) ||
-       !indexesofvisiblecolumns.contains(col)) return QVariant();
-    /// получить реальный номер поля
-    int realindex = indexesofvisiblecolumns[col];
-    return tablequery.value(realindex);
-}
-
-QVariant MyTable::getFieldValue(int row, QString field)
-{
-    int colnum = fieldlist.indexOf(field);
-    if(colnum == -1) return QVariant();
-    return getCellValue(row, colnum);
-}
-
-bool MyTable::generateSelectQuery()
-{
-    QString str = "SELECT ";
-
-    /// формирование списка полей (таблица.поле)
-    QStringList::iterator itr;
-    int i = 0;
-    for(itr = fieldlist.begin(); itr != fieldlist.end(); ++itr)
+    if(fields.size() == 0) return false;
+    QList<MyField>::const_iterator itr;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
     {
-        if(itr != fieldlist.begin())  str += ", ";
-        str +=  tablenamelist[i] + "." + *itr;
-        ++i;
+        if((*itr).name.toUpper() == field.toUpper()) return true;
     }
-    /// формирование FROM секции запроса
-    str += " FROM ";
-    /// добавление список таблиц в FROM участок запроса
-    if(subtable.size() == 0) str += tablename;
-    else{
-        QStringList::iterator itr;
-        for(itr = subtable.begin(); itr != subtable.end(); ++itr)
-        {
-            if(itr != subtable.begin()) str += ", ";
-            str += *itr;
-        }
-    }
-    /// создание условия выборки - секции WHERE
-    QMap<QString,int> numberofentries;                                          /// число вхождений каждой из таблиц - определяется кол-вом ключей принадлеащих каждой таблице
-    if(subtable.size() > 0)
+    return false;
+}
+
+int MyTable::fieldRealIndexOf(QString field)
+{
+    if(fields.size() == 0) return -1;
+    QList<MyField>::const_iterator itr;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
     {
-        QStringList temp;                                                       /// для хранения найденной связки таблиц
-        QStringList tmplist;                                                    /// для хранения результата
-
-        QStringList::iterator itr;
-        for(itr = subtable.begin(); itr != subtable.end(); ++itr)               /// взять таблицу
-        {
-            QStringList::iterator itr1;
-            for(itr1 = subtable.begin(); itr1 != subtable.end(); ++itr1)        /// взять вторую таблицу из того же списка
-            {
-                if(itr != itr1 && !temp.contains(*itr1+*itr))                   /// 1 и 2 взятые таблицы не одна и та же
-                {
-                    /// получить ключ связывающий их (если таковы есть)
-                    MyDataOfKey key = metadata->getKeyData(*itr,*itr1);
-                    if(metadata->isError()) return false;
-                    if(key.foreignkey.isEmpty() || key.primarykey.isEmpty()) break;
-                    else{
-                        QString str1 = *itr  + "." + key.foreignkey  + " = " +
-                                      *itr1 + "." + key.primarykey + " ";
-                        if(!numberofentries.contains(*itr))
-                            numberofentries.insert(*itr,1);
-                        else
-                            numberofentries[*itr]++;
-                        tmplist.append(str1);
-                    }
-                }
-            }
-        }
-        if(tmplist.size() > 0)
-        {
-            str += " WHERE ";
-            QStringList::iterator itr;
-            for(itr = tmplist.begin(); itr != tmplist.end(); ++itr)
-            {
-                if(itr != tmplist.begin()) str += " AND ";
-                    str += *itr + " ";
-
-            }
-        }
+        if((*itr).name.toUpper() == field.toUpper()) return (*itr).realindex;
     }
-    /// формирование участка ORDER BY
-    QString field = "";
-    if(numberofentries.size() > 0)
+    return -1;
+}
+
+int MyTable::fieldViewUndexOf(QString field)
+{
+    if(fields.size() == 0) return -1;
+    QList<MyField>::const_iterator itr;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
     {
-        int      max = -1;
-        QString  table;
-        QStringList::iterator itr;
-        for(itr = subtable.begin(); itr != subtable.end(); ++itr){
-            if(numberofentries[*itr] > max){
-                max = numberofentries[*itr];
-                table = *itr;
-            }
-        }
-        field = metadata->getPrimaryKey(table);
-        if(metadata->isError()) return false;
+        if((*itr).name.toUpper() == field.toUpper()) return (*itr).indexforviewer;
     }
-    else{
-        field = metadata->getPrimaryKey(tablename);
-        if(metadata->isError()) return false;
-    }
-    if(field != "")
-        str += " ORDER BY " + field;
+    return -1;
+}
 
-    /// сохранить текст запроса в lastquerytext
-    lastquerytext = str;
+int MyTable::tableIndexOf(QString table)/// получить номер таблицы
+{
+    if(subtables.size() == 0) return -1;
+    QList<MySubtable>::const_iterator itr;
+    int index = 0;
+    for(itr = subtables.begin(); itr != subtables.end(); ++itr)
+    {
+        if((*itr).name.toUpper() == table.toUpper()) return index;
+        ++index;
+    }
+    return -1;
+}
+
+bool MyTable::checkSubtables() /// проверка валидности субтаблиц
+{
+    if(subtables.size() == 0) return false;
+    QList<MySubtable>::const_iterator itr;
+    for(itr = subtables.begin(); itr != subtables.end(); ++itr)
+    {
+        if(!metadata->tableIsValid((*itr).name)) return false;
+    }
     return true;
 }
 
-void MyTable::generateUpdateQuery()
+bool MyTable::prepareSubtables()/// подготовить данные каждой субтаблицы
 {
-    /// для каждой таблицы свой запрос
-    /// обойти все поля в editablerecord
-    /// структура запроса для каждой таблицы
-    QStringList::iterator itr;  /// итератор по полям
-    QStringList::iterator itr1; /// итератор по таблицам
-    itr1 = tablenamelist.begin();
-    int index = 0;
-    for(itr = fieldlist.begin(); itr < fieldlist.end(); ++itr)
+    if(subtables.size() == 0) return false;
+    QList<MySubtable>::iterator itr;
+    QList<MySubtable>::const_iterator itr1;
+    for(itr = subtables.begin(); itr != subtables.end(); ++itr)
     {
-        if(flagseditable[index]) /// в список включаются только редактируемые поля
+        QString pk = metadata->getPrimaryKey((*itr).name);                      /// получить первичный ключ субтаблицы
+        (*itr).primarykey = pk;
+        if(!contains(pk)) appendField(pk,(*itr).name,false,false);              /// если ключ отсутствует в структуре таблицы, его нужно добавить и спрятать
+
+        /// получение списка внешних ключей, связывающих текущую субтаблицу с другими субтаблицами
+        for(itr1 = subtables.begin(); itr1 != subtables.end(); ++itr1)
         {
-            QString curtable;
-            if((*itr1).size() > 0)
-                curtable = *itr1;
-            else
-                curtable = tablename;
-            if(!fieldsforquery.contains(curtable))
+            if(itr1 != itr)
             {
-                fieldsforquery.insert(curtable,QStringList());
+                /// получить ключ связывающий субтаблицы (если таков есть)
+                MyDataOfKey key = metadata->getKeyData((*itr).name,(*itr1).name);
+                if(key.foreignkey.isEmpty() || key.primarykey.isEmpty()) break;
+                (*itr).foreignkeys.append(key);
             }
-            fieldsforquery[curtable].append(*itr);
         }
-        ++itr1;
-        ++index;
     }
+    return true;
 }
 
+bool MyTable::getExtendedDataOfFields()
+{
+    QList<MySubtable>::iterator itrt;
+    QList<MyField*>  ::iterator itrf;
+    for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
+    {
+        QList<MyField*> *tablefields = &(*itrt).fields;
+        for(itrf = tablefields->begin(); itrf != tablefields->end(); ++itrf)
+        {
+            (*itrf)->altername  = metadata->getAlterName ((*itrt).name,(*itrf)->name);
+            (*itrf)->validator  = metadata->getValidator ((*itrt).name,(*itrf)->name);
+            (*itrf)->alterfield = metadata->getAlterField((*itrt).name,(*itrf)->name);
+        }
 
-bool MyTable::prepareForeignKeysDataForTable(QString table)
+    }
+    /// обработка полей - внешних ключей
+    for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
+    {
+        QVector<MyDataOfKey>::iterator itrfk;
+        QVector<MyDataOfKey> fklist;
+        metadata->getForeignKeys((*itrt).name, fklist);;
+        for(itrfk = fklist.begin(); itrfk != fklist.end(); ++itrfk)
+        {
+            int index = fieldRealIndexOf((*itrfk).foreignkey);
+            if(index != -1)
+            {
+                /// сгенерировать SQL запрос для получения данных из ссылаемой таблицы
+                MyDataReference ref;
+                ref.sqltext = "SELECT * FROM " + (*itrfk).referencedtable +
+                              " ORDER BY "+(*itrfk).primarykey;
+                QStringList alternamesoftable;
+                metadata->getAlterNamesFieldOfTable((*itrfk).referencedtable, alternamesoftable);
+                ref.alternames = alternamesoftable;
+                fields[index].reference = ref;
+            }
+        }
+    }
+
+    if(metadata->isError()) return false;
+    return true;
+}
+
+QString MyTable::displayFieldAlterName(int index)
+{
+    if(index < 0 || index > fieldforviewer.size()) return QString();
+    return fieldforviewer[index]->altername;
+}
+
+QString MyTable::displayFieldName(int index)
+{
+    if(index < 0 || index > fieldforviewer.size()) return QString();
+    return fieldforviewer[index]->name;
+}
+
+QVariant MyTable::displayCellValue(int row, int col)
+{
+    if(!tablequery.seek(row) || col < 0 || col > fieldforviewer.size()) return QVariant();
+    return tablequery.value(fieldforviewer[col]->realindex);
+}
+
+QVariant MyTable::displayFieldValue(int row, QString field)
+{
+    int col = fieldRealIndexOf(field);
+    return displayCellValue(row, col);
+}
+
+void MyTable::generateSelectQuery()
+{
+    QString querytext = "SELECT ";
+
+    /// перенос списка полей в запрос (в порядке добавления полей в таблицу!)
+    QList<MyField>::const_iterator itrf;
+    for(itrf = fields.begin(); itrf != fields.end(); ++itrf)
+    {
+        if(itrf != fields.begin())  querytext += " , ";
+        querytext +=  (*itrf).table->name + "." + (*itrf).name;
+    }
+
+    /// формирование FROM секции запроса
+    querytext += " FROM ";
+    /// добавление списка таблиц в FROM участок запроса
+    QList<MySubtable>::const_iterator itrt;
+    for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
+    {
+        if(itrt != subtables.begin()) querytext += " , ";
+        querytext += (*itrt).name;
+    }
+
+    /// создание условия выборки - секции WHERE и ORDER
+    QString fieldfororder;                                                      /// поле по которому производится группировка
+    if(subtables.size() > 1)
+    {
+        int items = 0;                                                          /// число элементов, добавленных в WHERE
+        int maxcountfk = -1;                                                    /// максимальное число fk
+        QList<MySubtable>::const_iterator itrt1;
+        for(itrt1 = subtables.begin(); itrt1 != subtables.end(); ++itrt1)
+        {
+            const QList<MyDataOfKey> *fkeys = &(*itrt1).foreignkeys;
+            if(maxcountfk < fkeys->size())
+            {
+                maxcountfk = fkeys->size();
+                fieldfororder = (*itrt1).primarykey;
+            }
+            if((*fkeys).size() > 0)
+            {
+                QList<MyDataOfKey>::const_iterator itrfk;
+                for(itrfk = fkeys->begin(); itrfk != fkeys->end(); ++itrfk)
+                {
+                    if(items == 0 ) querytext += " WHERE ";
+                    else querytext += " AND ";
+                    querytext += (*itrfk).table           + "." + (*itrfk).foreignkey  + " = " +
+                                 (*itrfk).referencedtable + "." + (*itrfk).primarykey  + " ";
+                    ++items;
+                }
+            }
+        }
+    }
+    else fieldfororder = subtables[0].primarykey;
+
+    /// формирование участка ORDER BY
+    querytext += " ORDER BY " + fieldfororder;
+    lastselecttext = querytext;
+}
+
+/*bool MyTable::prepareForeignKeysDataForTable(QString table)
 {
     QVector<MyDataOfKey>keys;
     metadata->getForeignKeys(table, keys);                                      /// получить список внешних ключей
@@ -501,54 +643,5 @@ bool MyTable::prepareForeignKeysDataForTable(QString table)
         }
     }
     return true;
-}
+}*/
 
-bool MyTable::prepareForeignKeysData()
-{
-    QStringList::iterator itr;
-    if(subtable.size() > 0)
-    {
-        for(itr = subtable.begin(); itr != subtable.end(); ++itr)               /// для каждой субтаблицы
-        {
-            prepareForeignKeysDataForTable(*itr);
-        }
-    }
-    else
-        prepareForeignKeysDataForTable(tablename);
-    return true;
-}
-
-bool MyTable::preparePrimaryKeysData()
-{
-    /// для таблицы необходимо запросить значения первичных
-    /// ключей каждой таблицы
-    ///
-    /// получить список первичных ключей всех таблиц
-    if(subtable.size() > 0)
-    {
-        QStringList::iterator itrs;
-        for(itrs = subtable.begin(); itrs != subtable.end(); ++itrs)
-        {
-            QString pk = metadata->getPrimaryKey(*itrs);
-            if(metadata->isError()) return false;
-            /// если ключ отсутствует в структуре таблицы, его нужно добавить и скрыть
-            if(!fieldlist.contains(pk))
-                appendField(pk,*itrs,false,false);
-            primarykeys.append(pk);
-        }
-    }
-    else
-    {
-        QString pk = metadata->getPrimaryKey(tablename);
-        if(metadata->isError()) return false;
-        /// если ключ отсутствует в структуре таблицы, его нужно добавить и скрыть
-        if(!fieldlist.contains(pk))
-        {
-            appendField(pk,tablename,false,false);
-            primarykeys.append(pk);
-        }
-    }
-
-    return true;
-
-}

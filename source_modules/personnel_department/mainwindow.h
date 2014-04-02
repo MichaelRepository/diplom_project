@@ -60,6 +60,11 @@ private slots:
     void on_Edit_button1_clicked();
     void tableView_items_selected();                                            /// обработка выделения элементов таблицы
 
+    void on_Refresh_button1_clicked();
+    void on_Add_button1_clicked();
+
+    void on_Delete_button1_clicked();
+
 private:
  /// методы
     void initTables();
@@ -67,7 +72,7 @@ private:
     void add_new_record();                                                      /// добавить новую запись
     void remove_records();                                                      /// удалить записи
     void edit_records();                                                        /// изменить запись
-
+    void refresh_table();
  /// параметры
     Ui::MainWindow *ui;
 

@@ -12,6 +12,7 @@ public:
     ~MyTableModel();
 
     void setTableObject(MyTable* tableobj);
+    void refresh();
 
     int columnCount (const QModelIndex & parent = QModelIndex()) const;         /// возвращает кол-во столбцов относительно родительского индекса
     int rowCount    (const QModelIndex & parent = QModelIndex()) const;         /// возвращает число строк относительно родительского индекса
