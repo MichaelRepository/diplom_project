@@ -2,9 +2,9 @@
     <qresource prefix="/">
         <file>SplashScreen.jpg</file>
         <file>cat.ico</file>
+        <file>cat.gif</file>
     </qresource>
     <qresource prefix="/svg">
-        <file>Awesome.svg</file>
         <file>business-card.svg</file>
         <file>checkmark-icon.svg</file>
         <file>direction-icon.svg</file>
@@ -37,6 +37,11 @@
         <file>gear-icon.svg</file>
         <file>menu-icon.svg</file>
         <file>eye-icon.svg</file>
+        <file>add-file.svg</file>
+        <file>remove-file.svg</file>
+        <file>document.svg</file>
+        <file>file_edit.svg</file>
+        <file>save_icon.svg</file>
     </qresource>
     <qresource prefix="/style">
         <file>WowStyle.qss</file>
