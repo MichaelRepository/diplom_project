@@ -7,6 +7,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    userid = -1;
+
     connectionname = "wowdb";
 
     QApplication::desktop()->availableGeometry(1);
@@ -48,22 +50,23 @@ MainWindow::MainWindow(QWidget *parent) :
     subtablewidget->setTitleText("");
 
     /// создание меток, помещаемых в статус бар
-    Status_label                = new QLabel(this);
     Status_label_curtable       = new QLabel(this);
     Status_label_count_rows     = new QLabel(this);
     Status_label_count_selected = new QLabel(this);
     Status_search_edit          = new QLineEdit(this);
+
+    connect(Status_search_edit, &QLineEdit::textEdited,
+            this,               &MainWindow::searchStart);
+
     /// добавление меток в статус бар
-    ui->statusBar->addPermanentWidget(Status_label);
     ui->statusBar->addPermanentWidget(Status_search_edit);
     ui->statusBar->addPermanentWidget(Status_label_curtable);
     ui->statusBar->addPermanentWidget(Status_label_count_rows);
     ui->statusBar->addPermanentWidget(Status_label_count_selected,1);
+    ui->statusBar->setStyleSheet("QStatusBar::item{border:none;}");
 
-    Status_label->setMinimumWidth(5);
-    Status_label->setMaximumWidth(5);
     Status_search_edit->setMinimumWidth(170);
-    Status_search_edit->setStyleSheet( "background: url(:/png/search-icon.png) "
+    Status_search_edit->setStyleSheet( "margin-left:5px;background: url(:/png/search-icon.png) "
                                        "100% 100% no-repeat; "
                                        "background-position:left; "
                                        "padding-left:18px; "
@@ -95,7 +98,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::initTables()
 {
-    /// создание источника метаданных
+/// создание источника метаданных
     metadatasource = new MyInfoScheme(connectionname, this);
     if(metadatasource->isError() )
     {
@@ -103,78 +106,45 @@ void MainWindow::initTables()
         dbmessdlg.showdbmess(metadatasource->lastQueryError());
         exit(0);
     }
-    /// создание таблиц
-    specialitytable = new MyTable(metadatasource,connectionname);
-    if(specialitytable->lastSqlError().isValid())
-    {
-        dbmessdlg.setAdditionText("Приложение будет закрыто");
-        dbmessdlg.showdbmess(specialitytable->lastSqlError());
-        exit(0);
-    }
-    grouptable      = new MyTable(metadatasource,connectionname);
-    if(grouptable->lastSqlError().isValid())
-    {
-        dbmessdlg.setAdditionText("Приложение будет закрыто");
-        dbmessdlg.showdbmess(grouptable->lastSqlError());
-        exit(0);
-    }
-    studenttable    = new MyTable(metadatasource,connectionname);
-    if(studenttable->lastSqlError().isValid())
-    {
-        dbmessdlg.setAdditionText("Приложение будет закрыто");
-        dbmessdlg.showdbmess(studenttable->lastSqlError());
-        exit(0);
-    }
-    citizenship     = new MyTable(metadatasource,connectionname);
-    if(citizenship->lastSqlError().isValid())
-    {
-        dbmessdlg.setAdditionText("Приложение будет закрыто");
-        dbmessdlg.showdbmess(citizenship->lastSqlError());
-        exit(0);
-    }
-    /// редактор записи
-    dlgrecordedit   = new DialogEditRecord(connectionname,this);
-    /// модель данных таблицы
-    tablemodel      = new MyTableModel(this);
+
+/// создание таблиц
+    residencetable   = new MyTable(metadatasource, connectionname);
+    specialitytable  = new MyTable(metadatasource, connectionname);
+    grouptable       = new MyTable(metadatasource, connectionname);
+    studenttable     = new MyTable(metadatasource, connectionname);
+    citizenshiptable = new MyTable(metadatasource, connectionname);
+
+/// подготовить таблицу - проживание
+    residencetable->appendField("idresidence",    "residence", false, false);
+    residencetable->appendField("postcode",       "residence", true, true);
+    residencetable->appendField("regionrepublic", "residence", true, true);
+    residencetable->appendField("area",           "residence", true, true);
+    residencetable->appendField("city",           "residence", true, true);
+    residencetable->appendField("locality",       "residence", true, true);
+    residencetable->appendField("street",         "residence", true, true);
+    residencetable->appendField("house",          "residence", true, true);
+    residencetable->appendField("corps",          "residence", true, true);
+    residencetable->appendField("apartment",      "residence", true, true);
+    residencetable->appendField("registered",     "residence", true, true);
+    residencetable->appendField("subject",        "residence", false, false);
 
 /// подготовить таблицу - специальности
-   // specialitytable->tablename = "speciality";
     specialitytable->appendField("idspeciality",     "speciality", true, true);
     specialitytable->appendField("abbreviation",     "speciality", true, true);
     specialitytable->appendField("specialityname",   "speciality", true, true);
     specialitytable->appendField("periodeducation",  "speciality", true, true);
     specialitytable->appendField("basedon",          "speciality", true, true);
     specialitytable->appendField("specialization",   "speciality", true, true);
-    if(!specialitytable->initializeTable())
-    {
-        messdlg.settitl("Ошибка инициализации данных");
-        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Специальность>");
-        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
-                        "Приложение будет закрыто");
-        messdlg.exec();
-        exit(0);
-    }
 
 /// подготовить таблицу - группы
-   // grouptable->tablename = "groups";
     grouptable->appendField("idgroup",      "groups", false, true);
     grouptable->appendField("speciality",   "groups", true,  true);
     grouptable->appendField("groupname",    "groups", true,  true);
     grouptable->appendField("yearformation","groups", true,  true);
     grouptable->appendField("form",         "groups", true,  true);
     grouptable->appendField("budget",       "groups", true,  true);
-    if(!grouptable->initializeTable())
-    {
-        messdlg.settitl("Ошибка инициализации данных");
-        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Группа>");
-        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
-                        "Приложение будет закрыто");
-        messdlg.exec();
-        exit(0);
-    }
 
 /// подготовить таблицу - студенты
-    //studenttable->tablename = "student";
     studenttable->appendField("subject",          "student", false, true);
     studenttable->appendField("numbertestbook",   "student", true,  true);
     studenttable->appendField("surname",          "subject", true,  true);
@@ -186,33 +156,41 @@ void MainWindow::initTables()
     studenttable->appendField("budget",           "groups",  false, true);
     studenttable->appendField("datebirth",        "subject", true,  true);
     studenttable->appendField("placebirth",       "subject", true,  true);
-    studenttable->appendField("studentgroup",     "student", true,  false );
-    if(!studenttable->initializeTable())
-    {
-        messdlg.settitl("Ошибка инициализации данных");
-        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Студент>");
-        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
-                        "Приложение будет закрыто");
-        messdlg.exec();
-        exit(0);
-    }
+    studenttable->appendField("studentgroup",     "student", true,  false);
+    studenttable->appendField("idsubject",        "subject", false, false);
+    studenttable->appendLink ("Проживание", "idsubject", "subject", residencetable);
 
 /// подготовить таблицу - список гражданств
-   // citizenship->tablename = "citizenshiplist";
-    citizenship->appendField("idcitizenship",   "citizenshiplist", false, true);
-    citizenship->appendField("citizenshipname", "citizenshiplist", false, true);
-    if(!citizenship->initializeTable())
+    citizenshiptable->appendField("idcitizenship",   "citizenshiplist", false, true);
+    citizenshiptable->appendField("citizenshipname", "citizenshiplist", false, true);
+
+/// инициализация таблиц
+    bool    allinit    = true;
+
+    allinit &= residencetable  ->initializeTable();
+    allinit &= specialitytable ->initializeTable();
+    allinit &= grouptable      ->initializeTable();
+    allinit &= citizenshiptable->initializeTable();
+    allinit &= studenttable    ->initializeTable();
+
+    if(!allinit)
     {
-        messdlg.settitl("Ошибка инициализации данных");
-        messdlg.settext("Произошла ошибка в процессе инициализации таблицы <Гражданство>");
-        messdlg.setinfo("Объект - таблица, не получил необходимые данные. \n"
+        QMessageBox messbox;
+        messbox.setWindowTitle("Ошибка инициализации данных");
+        messbox.setText("Произошла ошибка в процессе инициализации таблиц\n"
                         "Приложение будет закрыто");
-        messdlg.exec();
+        messbox.setIcon(QMessageBox::Critical);
+        messbox.addButton(QMessageBox::Ok);
+        messbox.setButtonText(QMessageBox::Ok, "Ясно");
+        messbox.exec();
         exit(0);
     }
 
 /// ВАЖНО - установка глобальной таблицы
-    globaltable = specialitytable;
+    dlgrecordedit   = new DialogEditRecord(connectionname, this);
+    tablemodel      = new MyTableModel(this);
+    subtablemodel   = new MyTableModel(this);
+    globaltable     = specialitytable;
 }
 
 void MainWindow::init_sys()
@@ -222,8 +200,7 @@ void MainWindow::init_sys()
     pixmap.scaledToHeight (100,  Qt::SmoothTransformation);
     pixmap.scaledToWidth  (100,  Qt::SmoothTransformation);
     splashwindow = new QSplashScreen(pixmap);
-    splashwindow->setWindowFlags(Qt::SplashScreen | Qt::FramelessWindowHint /*|
-                                 Qt::WindowStaysOnTopHint*/);
+    splashwindow->setWindowFlags(Qt::SplashScreen | Qt::FramelessWindowHint);
     splashwindow->show();
     splashwindow->showMessage("Start");
     splashwindow->setEnabled(false);                                            /// делаю окно неактивным, чтобы при клике окно не закрывалось
@@ -261,12 +238,37 @@ void MainWindow::init_sys()
     QApplication::processEvents();
 
     /// авторизация пользователя
-    authorizedlg.setconnectionname(connectionname);                             /// передать имя подключения
-    while(authorizedlg.getstate() == REPEAT) {                                  /// проверять состояние авторизации
-        authorizedlg.exec();                                                    /// вывод диалога авторизации
+
+    while(authorizedlg.exec() != 0 && userid == -1)
+    {
+        QSqlQuery query0(db);
+        query0.prepare("SELECT iduser FROM operators WHERE login = :login "
+                       "AND pass = :pass AND type = :type");
+        query0.bindValue(":login", authorizedlg.userName());
+        query0.bindValue(":pass",  authorizedlg.userPass());
+        query0.bindValue(":type",  3);
+        if(!query0.exec())
+        {
+            dbmessdlg.showdbmess(query0.lastError());
+            break;
+        }
+        if(!query0.first())
+        {
+            QMessageBox messbox;
+            messbox.setIcon(QMessageBox::Warning);
+            messbox.setWindowTitle("Сообщение");
+            messbox.setText("Указаны некорректные авторизационные данные!");
+            messbox.addButton(QMessageBox::Ok);
+            messbox.setButtonText(QMessageBox::Ok,"ясно");
+            messbox.exec();
+        }
+        else if(query0.value(0).isValid())
+        {
+            userid = query0.value(0).toInt();
+            break;
+        }
     }
-    if(authorizedlg.getstate() == CANCEL) {exit(0);}                            /// во время авторизации произошла ошибка или было отменено действие
-    userid = authorizedlg.getuserid();                                          /// получен идентификатор пользователя
+    if(userid == -1) exit(0);
 
     initTables();                                                               /// ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ
     set_current_table(SPECIALITY, BUTTONMODE);                                  /// установить текущую таблицу
@@ -318,6 +320,8 @@ void MainWindow::refresh_menu()
     Status_label_count_rows->setText    (" Число записей: "+ QString::number(globaltable->getRecordsCount())+" ");
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
+
+    ui->Filter_checked_button->setChecked(globaltable->isFiltered());
 }
 
 void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
@@ -342,14 +346,6 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
                 return ;
             }
         }
-        /*if(mode == BUTTONMODE)
-            grouptable->createSelectQuery(false,false,true);
-        else{
-            QVariantList bindvalues;
-            bindvalues << specialitytable.getCurrentRecordFieldValue("idspeciality");
-            grouptable->bindValues(bindvalues);
-            grouptable->createSelectQuery(true,false,true);
-        }*/
         globaltable = grouptable;
         break;
     case STUDENT:
@@ -360,14 +356,6 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
                return ;
            }
        }
-       /* if(mode == BUTTONMODE)
-            studenttable->createSelectQuery(false,false,true);
-        else{
-            QVariantList bindvalues;
-            bindvalues << grouptable->getCurrentRecordFieldValue("idgroup");
-            studenttable->bindValues(bindvalues);
-            studenttable->createSelectQuery(true,false,true);
-        }*/
         globaltable = studenttable;
         break;
     }
@@ -440,15 +428,13 @@ void MainWindow::on_Switch_table_stud_button_clicked()
 
 void MainWindow::on_tableView_clicked(const QModelIndex &index)
 {
-    /*
-    globaltable->setCurrentRow(index.row());
-    if(currenttable != STUDENT)   return ;                                      /// только для таблицы студенты
-    MyTable* subtable;
-    if(!globaltable->isForeignKey(index.column() ) ) return;
-    subtable = globaltable->getForeignTable(index.column() );
-    if(subtable == 0) return;
-*/
-
+    if(!globaltable->displayedFieldIsLink(index.column()) ) return;
+    MyLink * link = globaltable->getdisplayedLink(index.column() );
+    if(link->table_1 == 0) return;
+    QVariant key0_1val = globaltable->getFieldValue(link->key0_1);
+    if(!key0_1val.isValid()) return;
+    link->table_1->setFilterForField(link->key1_0, key0_1val.toString());
+    link->table_1->setFilterActivity(true);
     /**
         танец с бубном:
         >задача: необходимо получить координаты точки в которую
@@ -462,7 +448,7 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
         >решение: получение координат visualRect иперемещение их в середину виджета,
          путём увеличения x на величину w, а y на h
     **/
-/*
+
     QRect cell = ui->tableView->visualRect(index);
     QPoint pos(cell.x(),cell.y());
     QPoint pos1(pos.x()+cell.width()/2,pos.y()+cell.height()/2);
@@ -483,17 +469,12 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
     if(pos.x() + subtablewidget->width() > QApplication::desktop()->availableGeometry(0).width())
         pos.setX(pos.x() - subtablewidget->width()-20);
 
-    QVariantList bindvalues;
-    bindvalues << globaltable->getCurrentRecordFieldValue(0);
-    subtable->bindValues(bindvalues);
-    subtable->execSelect(true,false,true);
-
-    subtablewidget->setTitleText(globaltable->tablename+"->"+subtable->tablename);
-    subtablewidget->setTable(subtable);
+    subtablemodel->setTableObject(link->table_1);
+    link->table_1->updateData();
+    subtablewidget->setDisplayMode(true,true,true,true);
+    subtablewidget->setTableModel(subtablemodel);
     subtablewidget->move(pos);
     subtablewidget->show();
-*/
-
 }
 
 void MainWindow::tableView_items_selected()
@@ -715,7 +696,7 @@ void MainWindow::edit_records()                                                 
 
 void MainWindow::refresh_table()
 {
-    if(globaltable->updateData())
+    if(!globaltable->updateData())
     {
         dbmessdlg.showdbmess(globaltable->lastSqlError());
     }
@@ -739,4 +720,47 @@ void MainWindow::on_Add_button1_clicked()
 void MainWindow::on_Delete_button1_clicked()
 {
     remove_records();
+}
+
+void MainWindow::on_Filter_checked_button_clicked()
+{
+    bool oldstate = globaltable->isFiltered();
+    globaltable->setFilterActivity(!oldstate);
+    bool newstate = globaltable->isFiltered();
+    ui->Filter_checked_button->setChecked(newstate);
+    if(newstate != oldstate)
+    {
+        globaltable->updateData();
+        tablemodel->refresh();
+    }
+}
+
+void MainWindow::searchStart()
+{
+    QString findvalue = Status_search_edit->text();
+    QItemSelectionModel* selectionmodel = ui->tableView->selectionModel();
+    QAbstractItemModel*  model          = ui->tableView->model();
+    if(findvalue.size() < 2) {selectionmodel->clearSelection(); return;}
+    QString fieldname;
+    switch(currenttable){
+    case SPECIALITY:
+        fieldname = "abbreviation";
+        break;
+    case GROUP:
+        fieldname = "groupname";
+        break;
+    case STUDENT:
+       fieldname = "surname";
+       break;
+    }
+    QList<int> result = globaltable->searchRecordByField(fieldname, findvalue);
+    QList<int>::const_iterator itr;
+    selectionmodel->clearSelection();
+    for(itr = result.begin(); itr != result.end(); ++itr)
+    {
+        selectionmodel->select(model->index((*itr),0) ,
+                               QItemSelectionModel::Rows |
+                               QItemSelectionModel::Select);
+    }
+
 }

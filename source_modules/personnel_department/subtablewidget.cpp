@@ -8,10 +8,10 @@ SubTableWidget::SubTableWidget(QWidget *parent) :
     ui->setupUi(this);
 
     statusbar       = new QStatusBar(this);
-    header          = new QSpreadsheetHeaderView(Qt::Horizontal,this);
-    standartheader  = new QHeaderView(Qt::Horizontal,this);
-    movable   = true;                                                           /// разрешить перемещение окна
-    ui->tableView->setHorizontalHeader(header);
+    //header          = new QSpreadsheetHeaderView(Qt::Horizontal,this);
+    //standartheader  = new QHeaderView(Qt::Horizontal,this);
+    movable         = true;                                                     /// разрешить перемещение окна
+    //ui->tableView->setHorizontalHeader(header);
 
     QLayout* layoutWidget = ui->gridLayout_2;
     layoutWidget->setContentsMargins(0,0,0,0);
@@ -24,10 +24,10 @@ SubTableWidget::~SubTableWidget()
     delete ui;
 }
 
-void SubTableWidget::setQueryModel(QSqlQueryModel *model)
+void SubTableWidget::setTableModel(QAbstractTableModel *model)
 {
-   querymodel = model;
-   ui->tableView->setModel(querymodel);
+   tablemodel = model;
+   ui->tableView->setModel(tablemodel);
    ui->tableView->resizeColumnsToContents();
    ui->tableView->resizeRowsToContents();
 }
@@ -47,15 +47,15 @@ void SubTableWidget::setDisplayMode(bool titleVisible,
     ui->label->setVisible(titleVisible);
     ui->toolsframe->setVisible(editbuttonpanelVisible);
     ui->tableView->setFocusPolicy(tablefocuspolicy);
-    if(!headerMenuVisible)
+    /*if(!headerMenuVisible)
     {
         ui->tableView->setHorizontalHeader(standartheader);
         ui->tableView->resizeColumnsToContents();
         ui->tableView->resizeRowsToContents();
-    }
-    QString style = "QAbstractItemView:item::selected{color:#fff;background-color: #3399FF;}";
+    }*/
+    //QString style = "QAbstractItemView:item::selected{color:#fff;background-color: #3399FF;}";
 
-    if(tablefocuspolicy == Qt::NoFocus) ui->tableView->setStyleSheet(style);
+    //if(tablefocuspolicy == Qt::NoFocus) ui->tableView->setStyleSheet(style);
 }
 
 void SubTableWidget::mousePressEvent(QMouseEvent *event)
@@ -89,7 +89,7 @@ void SubTableWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void SubTableWidget::setRow(int row)
 {
-    ui->tableView->selectionModel()->select(querymodel->index(row,0),
+    ui->tableView->selectionModel()->select(tablemodel->index(row,0),
                                             QItemSelectionModel::ClearAndSelect |
                                             QItemSelectionModel::Rows);
 }

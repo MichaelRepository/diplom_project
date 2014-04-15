@@ -42,6 +42,13 @@
         <file>document.svg</file>
         <file>file_edit.svg</file>
         <file>save_icon.svg</file>
+        <file>key_icon.svg</file>
+        <file>fkey-icon.svg</file>
+        <file>table_row_rem.svg</file>
+        <file>table_row_add.svg</file>
+        <file>table_.svg</file>
+        <file>table_tmp.svg</file>
+        <file>table_row_ed.svg</file>
     </qresource>
     <qresource prefix="/style">
         <file>WowStyle.qss</file>

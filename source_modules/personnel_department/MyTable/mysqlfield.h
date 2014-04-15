@@ -6,7 +6,7 @@
 class MyDataReference{ /// класс для хранения данных поля - ссылки
 public:
     QString     sqltext;                                                        /// запрос на внешнюю таблицу
-    QStringList alternames;                                                     /// алтернативные имена внешней таблицы
+    QStringList alternames;                                                     /// алтернативные имена полей внешней таблицы
 };
 
 

@@ -30,9 +30,8 @@ FORMS    += mainwindow.ui \
     dbmessdlg.ui \
     reportconfigdialog.ui
 
-LIBS += -L"../quaziplib/" -lquazip
-INCLUDEPATH +=  "../quaziplib" \
-                "../resfile" \
+LIBS += -L"../../quaziplib/" -lquazip
+INCLUDEPATH +=  "../../quaziplib"
 
 RESOURCES += ../../resfile/src.qrc
 

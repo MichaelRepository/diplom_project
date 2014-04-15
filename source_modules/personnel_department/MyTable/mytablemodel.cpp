@@ -3,6 +3,10 @@
 MyTableModel::MyTableModel(QObject *parent) :
     QAbstractTableModel(parent)
 {
+    QSize size(16,16);
+    icoPKey.addFile(":/svg/key_icon.svg", size);
+    icoFKey.addFile(":/svg/fkey-icon.svg",size);
+    icoLink.addFile(":/svg/table_.svg",   size);
 }
 
 MyTableModel::~MyTableModel()
@@ -25,7 +29,7 @@ void MyTableModel::refresh()
 
 int MyTableModel::columnCount(const QModelIndex &parent) const
 {
-    return table->getDisplayedFieldsCount();
+    return table->displayedFieldsCount();
 }
 
 int MyTableModel::rowCount(const QModelIndex &parent) const
@@ -38,9 +42,19 @@ QVariant MyTableModel::data(const QModelIndex &index, int role) const
     if (!index.isValid())
         return QVariant();
 
+    bool isForeign = table->displayedFieldIsForeign(index.column());
+    bool isPrimary = table->displayedFieldIsPrimary(index.column());
+    bool isLink    = table->displayedFieldIsLink(index.column());
+
     switch (role) {
     case Qt::DisplayRole:
-        return (table->displayCellValue(index.row(), index.column()) );
+            return (table->displayCellValue(index.row(), index.column()) );
+
+    case Qt::DecorationRole:
+        if(isForeign) return icoFKey;
+        if(isPrimary) return icoPKey;
+        if(isLink)    return icoLink;
+        return QVariant();
     default: return QVariant();
     }
 

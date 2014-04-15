@@ -25,6 +25,9 @@ public:
 
 private:
     MyTable* table;
+    QIcon icoPKey;
+    QIcon icoFKey;
+    QIcon icoLink;
 };
 
     /*bool setData    (const QModelIndex & index, const QVariant & value,         /// записывает данные в элемент соответсвующий индексу

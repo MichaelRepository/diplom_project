@@ -21,7 +21,7 @@
         background: #2C3033;
 		font-family:&quot;Arial&quot;,&quot;Courier&quot;;
 }
-#frame{border:1px solid #68A0AD;}</string>
+#frame{border:1px solid #4586D8;}</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
@@ -274,13 +274,16 @@
       <item row="2" column="0">
        <widget class="QTableView" name="tableView">
         <property name="styleSheet">
-         <string notr="true"/>
+         <string notr="true">QAbstractItemView:item::selected{color:#fff;background-color: #4586D8;}</string>
         </property>
         <property name="frameShape">
          <enum>QFrame::NoFrame</enum>
         </property>
         <property name="frameShadow">
          <enum>QFrame::Plain</enum>
+        </property>
+        <property name="editTriggers">
+         <set>QAbstractItemView::NoEditTriggers</set>
         </property>
         <property name="selectionMode">
          <enum>QAbstractItemView::SingleSelection</enum>
@@ -291,6 +294,9 @@
         <property name="cornerButtonEnabled">
          <bool>false</bool>
         </property>
+        <attribute name="horizontalHeaderHighlightSections">
+         <bool>false</bool>
+        </attribute>
         <attribute name="verticalHeaderVisible">
          <bool>false</bool>
         </attribute>
@@ -301,6 +307,12 @@
       </item>
       <item row="0" column="0">
        <widget class="QLabel" name="label">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="styleSheet">
          <string notr="true">color: rgb(170, 255, 127);
 background: #2C3033;
@@ -310,7 +322,7 @@ border:1px solid #2C3033;
 border-right:25x solid #2C3033;</string>
         </property>
         <property name="text">
-         <string>table-&gt;subtable</string>
+         <string/>
         </property>
        </widget>
       </item>

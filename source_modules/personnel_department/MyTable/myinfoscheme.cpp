@@ -14,7 +14,7 @@ MyInfoScheme::MyInfoScheme(const QString &connectname, QObject *parent) :
     }
     dbname = db.databaseName();
     query  = new QSqlQuery(db);
-    error = false;
+    error  = false;
 }
 
 QString MyInfoScheme::getAlterName(const QString &table, const QString &field)

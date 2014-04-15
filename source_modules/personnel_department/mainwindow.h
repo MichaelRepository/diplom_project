@@ -62,8 +62,10 @@ private slots:
 
     void on_Refresh_button1_clicked();
     void on_Add_button1_clicked();
-
     void on_Delete_button1_clicked();
+    void on_Filter_checked_button_clicked();
+
+    void searchStart();
 
 private:
  /// методы
@@ -84,7 +86,6 @@ private:
     dbMessDlg               dbmessdlg;                                          /// диалог для вывода сообщеня БД
     SubTableWidget*         subtablewidget;                                     /// окно подтаблицы
     /// элементы статусбара
-    QLabel*                 Status_label;                                       /// используется для создания отступа
     QLabel*                 Status_label_curtable;                              /// отображает название активной таблицы
     QLabel*                 Status_label_count_rows;                            /// отображает число строк в активной таблице
     QLabel*                 Status_label_count_selected;                        /// отображает число выделенных строк
@@ -104,6 +105,7 @@ private:
     MyInfoScheme* metadatasource;
     /// модель данных для отобраения таблицы
     MyTableModel* tablemodel;
+    MyTableModel* subtablemodel;
     /// Таблицы
     MyTable *globaltable;
 
@@ -111,7 +113,8 @@ private:
     MyTable* grouptable;
     MyTable* studenttable;
 
-    MyTable* citizenship;
+    MyTable* citizenshiptable;
+    MyTable* residencetable;
 
     QSettings*              setting;                                            /// запись/чтение параметров приложения
 };

@@ -48,7 +48,7 @@ public:
         querymodel = model;
         subtableshov = false;
         subtabledlg  = new SubTableWidget(this);
-        subtabledlg->setQueryModel(model);
+        subtabledlg->setTableModel(model);
         subtabledlg->setDisplayMode(false,false,false,false,Qt::NoFocus);
         QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
                          this,        &DelegatButton:: update);

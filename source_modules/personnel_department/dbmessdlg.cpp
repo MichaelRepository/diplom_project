@@ -14,10 +14,13 @@ dbMessDlg::dbMessDlg(QWidget *parent) :
     font.setPixelSize(17);
     ui->TitleLine->setFont(font);
 
-    ui->iconwidget->setStyleSheet("image: url(:/svg/iconmonstr-database-7-icon.svg);");
     QIcon ico(":svg/iconmonstr-speech-bubble-11-icon.svg");
     this->setWindowIcon(ico);
     this->setWindowTitle("Сообщение");
+
+    ui->InfoBox->setVisible(false);
+    this->resize(width(),150);
+    this->setMaximumHeight(150);
 }
 
 dbMessDlg::~dbMessDlg()
@@ -36,16 +39,19 @@ void dbMessDlg::showdbmess(QSqlError lasterror)
         errtypestr = "Без ошибок";
         break;
     case QSqlError::ConnectionError:
-        errtypestr = "Ошибка подключения";
+        if(lasterror.number() == 1045)
+            errtypestr = "Ошибка авторизации";
+        else
+            errtypestr = "Ошибка подключения";
         break;
     case QSqlError::StatementError:
-        errtypestr = "Ошибка в синтаксисе";
+        errtypestr = "Ошибка в SQL запросе";
         break;
     case QSqlError::TransactionError:
-        errtypestr = "Ошибка транзакции";
+        errtypestr = "Ошибка транзакции БД";
         break;
     case QSqlError::UnknownError:
-        errtypestr = "Неизвестная ошибка";
+        errtypestr = "Неизвестная ошибка БД";
         break;
     }
 
@@ -53,8 +59,8 @@ void dbMessDlg::showdbmess(QSqlError lasterror)
     QString errinfo;
 
 
-    errtitl = "Ошибка БД [" + QString::number(lasterror.number())+"]"+
-              " Тип: "+errtypestr;
+    errtitl = "Ошибка " + QString::number(lasterror.number())+
+              "\nТип: "+errtypestr;
     errinfo = "database: "+lasterror.databaseText()+"\n"+
               "driver: "+lasterror.driverText();
 
@@ -72,4 +78,19 @@ void dbMessDlg::setAdditionText(QString text)
 void dbMessDlg::on_OkButton_clicked()
 {
     done(0);
+}
+
+void dbMessDlg::on_toolButton_clicked()
+{
+    ui->InfoBox->setVisible(!ui->InfoBox->isVisible());
+    if(!ui->InfoBox->isVisible())
+    {
+        this->resize(width(),150);
+        this->setMaximumHeight(150);
+    }
+    else
+    {
+        this->setMaximumHeight(250);
+        this->resize(width(),250);
+    }
 }

@@ -29,7 +29,7 @@ public:
     explicit SubTableWidget(QWidget *parent = 0);
     ~SubTableWidget();
 
-    void setQueryModel(QSqlQueryModel* model);
+    void setTableModel(QAbstractTableModel* model);
 
     void setTitleText(QString text);                                            /// установить заголовок
     void setDisplayMode(bool titleVisible           = true,                     /// отображать заголовок
@@ -55,10 +55,10 @@ private:
 
     QSpreadsheetHeaderView* header;                                             /// вьювер заголовока таблицы
     QHeaderView*            standartheader;
-    QStatusBar*         statusbar;
-    QPoint              mpos;
-    bool                movable;                                                /// перемещение окна
-    QSqlQueryModel*     querymodel;
+    QStatusBar*             statusbar;
+    QPoint                  mpos;
+    bool                    movable;                                            /// перемещение окна
+    QAbstractTableModel*    tablemodel;
 };
 
 #endif // SUBTABLEWIDGET_H

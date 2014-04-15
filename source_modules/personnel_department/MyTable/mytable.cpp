@@ -2,14 +2,11 @@
 
 MyTable::MyTable(MyInfoScheme *metadatascheme, QString connectname)
 {
+    init       = false;
     currentrow = -1;
     filtered   = false;
     freeFilter = "";
     connectionname = connectname;
-    QSqlDatabase db = QSqlDatabase::database(connectionname);
-    sqlerror = db.lastError();
-    if(!db.open()) return;
-    tablequery = QSqlQuery(db);
     metadata = metadatascheme;
 }
 
@@ -35,18 +32,39 @@ void MyTable::appendField(QString field, QString table, bool editable, bool visi
     {
         subtables.append(MySubtable());                                         /// добавить новую субтаблицу, если такой еще небыло в списке
         subtableindex = subtables.size()-1;
+        subtables[subtableindex].name = table;                                  /// задать имя субтаблице
     }
-    subtables[subtableindex].name = table;                                      /// задать имя субтаблице
-    subtables[subtableindex].fields.append(pfield);                             /// добавить текщее поле в список полей субтаблицы
-    pfield->table = &subtables[subtableindex];
+    subtables[subtableindex].fields.append(pfield);                             /// добавить текущее поле в список полей субтаблицы
+    pfield->table = &subtables[subtableindex];                                  /// передать полю указатель на его родительскую таблицу
     if(editable) ++subtables[subtableindex].editablefieldscount;                /// увеличить внутри субтабличный счетчик редактируемых записей
+}
+
+bool MyTable::appendLink(QString name,   QString key0_1,
+                         QString key1_0, MyTable *table_1)
+{
+    if(!this   ->contains(key0_1)) return false;
+    if(!table_1->contains(key1_0)) return false;
+
+    MyLink newlink;
+    newlink.name    = name;
+    newlink.key0_1  = key0_1;
+    newlink.key1_0  = key1_0;
+    newlink.table_1 = table_1;
+
+    links.append(newlink);
+    return true;
 }
 
 bool MyTable::initializeTable()
 {
+    if(init)                  return false;
     if(metadata->isError())   return false;                                     /// проверка источника метаданных
     if(!checkSubtables())     return false;                                     /// проверка валидности субтаблиц
     if(fields.size() == 0)    return false;                                     /// проверка полей
+
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    if(!db.open()) { sqlerror = db.lastError(); return false;}
+    tablequery = QSqlQuery(db);
 
     if(!prepareSubtables())         return false;                               /// инициализировать данные субтаблиц
     if(!getExtendedDataOfFields())  return false;
@@ -54,6 +72,7 @@ bool MyTable::initializeTable()
     /// сформировать SELECT запрос
     generateSelectQuery();
 
+    init = true;
     if(!updateData()) return false;
 
     return true;
@@ -72,6 +91,16 @@ void MyTable::setFilterForTable(QString str)
 
 void MyTable::setFilterActivity(bool activ)
 {
+    if(activ)
+    {
+        activ = false;
+        QList<MyField>::const_iterator itr;
+        for(itr = fields.begin(); itr != fields.end(); ++itr)
+        {
+            activ |= !(*itr).filter.isEmpty();
+        }
+        activ |= !freeFilter.isEmpty();
+    }
     filtered = activ;
 }
 
@@ -84,14 +113,21 @@ int MyTable::getRecordsCount()
     return tablequery.size();
 }
 
-int MyTable::getDisplayedFieldsCount()
+int MyTable::displayedFieldsCount()
 {
     /// вернуть число видимых полей (столбцов)
-    return fieldforviewer.size();
+    return (fieldforviewer.size() + links.count());
+}
+
+QVariant MyTable::getFieldValue(QString field)
+{
+    tablequery.seek(currentrow);
+    return tablequery.value(field);
 }
 
 bool MyTable::updateData()
 {
+    if(!init)                  return false;
 /// основной запрос
     QString querytext = lastselecttext;
     if(filtered)
@@ -140,6 +176,7 @@ bool MyTable::updateData()
         sqlerror = tablequery.lastError();
         return false;
     }
+
     return true;
 }
 
@@ -322,15 +359,21 @@ bool MyTable::isFiltered()
     return filtered;
 }
 
-int MyTable::searchRecordByField(QString field, QVariant value)
+QList<int> MyTable::searchRecordByField(QString field, QString value)
 {
-    if(fieldRealIndexOf(field) == -1) return -1;
-    for(int i = 0; i < tablequery.size(); ++i)
+    QList<int> list;
+    int index = fieldRealIndexOf(field);
+    if(index == -1 || !tablequery.first() ) return list;
+    int row = 0;
+    do
     {
-        tablequery.seek(i);
-        if(tablequery.value(field) == value) return i;
+        QString curvalue  = tablequery.value(index).toString();
+        if(curvalue.contains(value, Qt::CaseInsensitive)) list.append(row);
+        ++row;
     }
-    return -1;
+    while(tablequery.next());
+
+    return list;
 }
 
 int MyTable::getCurrentRowIndex()
@@ -472,7 +515,10 @@ bool MyTable::prepareSubtables()/// подготовить данные кажд
     {
         QString pk = metadata->getPrimaryKey((*itr).name);                      /// получить первичный ключ субтаблицы
         (*itr).primarykey = pk;
-        if(!contains(pk)) appendField(pk,(*itr).name,false,false);              /// если ключ отсутствует в структуре таблицы, его нужно добавить и спрятать
+        /// если ключ отсутствует в структуре объекта MyTable, его нужно добавить и спрятать
+        /// такое решение необходимо того, чтобы обладать доступом к
+        /// служебным данным без оброщения к БД
+        if(!contains(pk)) appendField(pk,(*itr).name,false,false);
 
         /// получение списка внешних ключей, связывающих текущую субтаблицу с другими субтаблицами
         for(itr1 = subtables.begin(); itr1 != subtables.end(); ++itr1)
@@ -507,12 +553,14 @@ bool MyTable::getExtendedDataOfFields()
     /// обработка полей - внешних ключей
     for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
     {
-        QVector<MyDataOfKey>::iterator itrfk;
         QVector<MyDataOfKey> fklist;
-        metadata->getForeignKeys((*itrt).name, fklist);;
+        QVector<MyDataOfKey>::iterator itrfk;
+        /// получить все внешние ключи таблицы
+        metadata->getForeignKeys((*itrt).name, fklist);
         for(itrfk = fklist.begin(); itrfk != fklist.end(); ++itrfk)
         {
             int index = fieldRealIndexOf((*itrfk).foreignkey);
+            /// если текущий ключ присутствует в списке полей
             if(index != -1)
             {
                 /// сгенерировать SQL запрос для получения данных из ссылаемой таблицы
@@ -523,36 +571,75 @@ bool MyTable::getExtendedDataOfFields()
                 metadata->getAlterNamesFieldOfTable((*itrfk).referencedtable, alternamesoftable);
                 ref.alternames = alternamesoftable;
                 fields[index].reference = ref;
+                if(!itrfk->referencedtable.isNull() )                           /// если referencedtable пуст, то поле-первичный ключ, иначе внешний
+                    fields[index].isForeign = true;                             /// установить признак - внешний ключ
+                else
+                    fields[index].isPrimary = true;                             /// установить признак - первичный ключ
             }
         }
     }
 
-    if(metadata->isError()) return false;
+    return !metadata->isError();
+}
+
+bool MyTable::prepareLinks()
+{
+   /* ??? */
     return true;
 }
 
 QString MyTable::displayFieldAlterName(int index)
 {
-    if(index < 0 || index > fieldforviewer.size()) return QString();
+    if(index < 0 || index >= (links.size()+fieldforviewer.size()) ) return QString();
+    if(displayedFieldIsLink(index)) return links[index-fieldforviewer.size()].name;
     return fieldforviewer[index]->altername;
 }
 
 QString MyTable::displayFieldName(int index)
 {
-    if(index < 0 || index > fieldforviewer.size()) return QString();
+    if(index < 0 || index >= (links.size()+fieldforviewer.size()) ) return QString();
+    if(displayedFieldIsLink(index)) return links[index-fieldforviewer.size()].name;
     return fieldforviewer[index]->name;
 }
 
 QVariant MyTable::displayCellValue(int row, int col)
 {
-    if(!tablequery.seek(row) || col < 0 || col > fieldforviewer.size()) return QVariant();
+    if(!tablequery.seek(row) || col < 0 ||
+       col > (fieldforviewer.size()+links.size()-2) ) return QVariant();
+    if(displayedFieldIsLink(col)) return QVariant();
     return tablequery.value(fieldforviewer[col]->realindex);
 }
 
 QVariant MyTable::displayFieldValue(int row, QString field)
 {
-    int col = fieldRealIndexOf(field);
+    int col = fieldViewUndexOf(field);
     return displayCellValue(row, col);
+}
+
+bool MyTable::displayedFieldIsForeign(int index)
+{
+    if(index < 0 || index >= (links.size()+fieldforviewer.size()) ) return false;
+    if(displayedFieldIsLink(index)) return false;
+    return fieldforviewer[index]->isForeign;
+}
+
+bool MyTable::displayedFieldIsPrimary(int index)
+{
+    if(index < 0 || index >= (links.size()+fieldforviewer.size()) ) return false;
+    if(displayedFieldIsLink(index)) return false;
+    return fieldforviewer[index]->isPrimary;
+}
+
+bool MyTable::displayedFieldIsLink(int index)
+{
+    if(index < 0 || index >= (links.size()+fieldforviewer.size()) ) return false;
+    return (index >= (fieldforviewer.size()));
+}
+
+MyLink * const MyTable::getdisplayedLink(int index)
+{
+    if(!displayedFieldIsLink(index)) return 0;
+    return &links[index-fieldforviewer.size()];
 }
 
 void MyTable::generateSelectQuery()
