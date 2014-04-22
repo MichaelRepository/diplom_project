@@ -13,6 +13,7 @@
 #include "dbmessdlg.h"
 #include "QSpreadsheetHeaderView.h"
 #include "MyTable/mytable.h"
+#include <QAbstractItemModel>
 
 /*enum SubTable{CITIZENSHIP, RESIDENCE, PASSPORT, REPRESENT,
               EDUCATION, PRIVILEGES,  MOREINF};*/
@@ -29,26 +30,32 @@ public:
     explicit SubTableWidget(QWidget *parent = 0);
     ~SubTableWidget();
 
-    void setTableModel(QAbstractTableModel* model);
+    void setTableModel(QAbstractItemModel* model);
 
     void setTitleText(QString text);                                            /// установить заголовок
-    void setDisplayMode(bool titleVisible           = true,                     /// отображать заголовок
-                        bool editbuttonpanelVisible = true,                     /// отображение панели с кнопками редактирования
-                        bool headerMenuVisible      = true,                     /// отображение контектсного меняю для заголовков субтаблицы
-                        bool dlgMovable             = true,                     /// перемещение окна
-                        Qt::FocusPolicy tablefocuspolicy = Qt::WheelFocus
-                        );
+    void setDisplayMode(bool titleVisible     = true,
+                        bool menuPanelVisible = true,
+                        bool dlgMovable       = true,
+                        Qt::FocusPolicy tablefocuspolicy = Qt::NoFocus);
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void setRow(int row);
+    int  getSelectedRowIndex();
 
 signals:
     void newrowselected(int);
+    void editButtonClicked();
+    void removeButtonClicked();
+    void addButtonClicked();
 
 private slots:
     void on_tableView_clicked(const QModelIndex &index);
+    void on_Edit_button1_clicked();
+    void on_Add_button1_clicked();
+    void on_Delete_button1_clicked();
+
 
 private:
     Ui::SubTableWidget *ui;
@@ -58,7 +65,7 @@ private:
     QStatusBar*             statusbar;
     QPoint                  mpos;
     bool                    movable;                                            /// перемещение окна
-    QAbstractTableModel*    tablemodel;
+    QAbstractItemModel*     tablemodel;
 };
 
 #endif // SUBTABLEWIDGET_H

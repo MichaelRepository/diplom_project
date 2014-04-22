@@ -1,103 +1,56 @@
 #ifndef MYSQLFIELD_H
 #define MYSQLFIELD_H
 
-#include <QSqlField>
+#include "myinfoscheme.h"
 
-class MyDataReference{ /// класс для хранения данных поля - ссылки
+class MyField;
+
+class MySubtable{
+public:
+    QString                 name;                                               /// имя
+    QList<MyField*>         fields;                                             /// указатели на поля (сами поля хранятся списком в объекте - таблица)
+    QString                 primarykey;                                         /// ключевое поле
+    /// внешние ключи, связывающие текущую субтаблицу с другими
+    /// субтаблицами, входящими в состав структуры объекта MyTable
+    QList<MyDataOfKey>      foreignkeys;
+    int editablefieldscount;                                                    /// число редактируемых полей
+};
+
+class MyDataReference{                                                          /// класс для хранения данных поля - ссылки
 public:
     QString     sqltext;                                                        /// запрос на внешнюю таблицу
     QStringList alternames;                                                     /// алтернативные имена полей внешней таблицы
 };
 
-
-class MySqlField : public QSqlField
-{
+class MyField{
 public:
-    MySqlField(const QString & fieldName = QString(),
-               QVariant::Type type = QVariant::Invalid,
-               const QString & altername = QString(),
-               const QString & validator = QString(),
-               const QString & realtype  = QString(),
-               const MyDataReference &referencedata = MyDataReference(),
-               bool visible  = true,
-               bool editable = true):
-    QSqlField(fieldName,type)
+    MyField ()
     {
-        fieldaltername = altername;
-        fieldvalidator = validator;
-        fieldrealtype  = realtype;
-        fieldvisible   = visible;
-        fieldeditable  = editable;
-        if(referencedata.sqltext.size() > 0)
-        {
-            reference      = referencedata;
-            fieldreference = true;
-        }
-        else
-            fieldreference = false;
+        table           = 0;
+        realindex       = -1;
+        indexforviewer  = -1;
+        isEditable      = false;
+        isVisible       = false;
+        isForeign       = false;
+        isPrimary       = false;
     }
 
-    MySqlField(const QSqlField &field)
-    {
-        this->setValue(field.value());
-        this->setName(field.name());
-        this->setType(field.type());
-        this->setAutoValue(field.isAutoValue());
-        this->setDefaultValue(field.defaultValue());
-        this->setGenerated(field.isGenerated());
-        this->setLength(field.length());
-        fieldreference = false;
-    }
+    MySubtable* table;                                                          /// таблица к которой относится поле
+    int realindex;                                                              /// реальный номер поля
+    int indexforviewer;                                                         /// номер для вьювера
+    QString name;                                                               /// имя
+    QString altername;                                                          /// псевдоним
+    QString validator;                                                          /// валидатор
+    QString alterfield;                                                         /// альтернативное поле (отображаемое вместо него)
+    QString realtype;                                                           ///
+    bool    isEditable;                                                         /// признак редактируемости
+    bool    isVisible;                                                          /// признак видимости в вьювере
+    bool    isForeign;                                                          /// признак поля-внешнего ключа
+    bool    isPrimary;                                                          /// признак поля-первичного ключа
+    MyDataReference reference;                                                  /// параметр - ссылка на внешнюю таблицу
+    MyDataOfKey     dataofkey;                                                  /// данные внешнего ключа (если поле-внешний ключ)
 
-    void clear(){
-        QSqlField::clear();
-        fieldaltername = "";
-        fieldvalidator = "";
-        fieldrealtype  = "";
-        fieldvisible   = true;
-        fieldeditable  = true;
-        fieldreference = false;
-    }
-
-    void setAlterName(QString alter) {fieldaltername = alter;}
-    void setValidator(QString valid) {fieldvalidator = valid;}
-    void setEditable (bool  editable){fieldeditable  = editable;}
-    void setVisible  (bool  visible) {fieldvisible   = visible;}
-    void setRealType (QString type)  {fieldrealtype  = type;}
-    void setReference(const MyDataReference& referencedata)
-    {
-        if(referencedata.alternames.size() > 0)
-        {
-            reference = referencedata;
-            fieldreference = true;
-        }
-    }
-    void setAlterField(QString field){alterfield = field;}
-    void setAlterData (QVariant data){alterdata = data;}
-
-
-    bool isVisible()     {return fieldvisible;}
-    bool isEditable()    {return fieldeditable;}
-    bool isReference()   {return fieldreference;}
-    QString  alterName() {return fieldaltername;}
-    QString  validator() {return fieldvalidator;}
-    QString  realType()  {return fieldrealtype;}
-    QString  alterField(){return alterfield;}
-    QVariant alterData (){return alterdata;}
-    MyDataReference referenceData() {return reference;}
-
-private:
-    QString fieldaltername;  /// алтернативное имя поля
-    QString fieldvalidator;  /// валидатор для редактора поля
-    QString fieldrealtype;   /// реальный тип данных по стандарту СУБД
-    bool    fieldeditable;   /// видим в редакторе
-    bool    fieldvisible;    /// видим в tableviewer
-    MyDataReference reference; /// данные ссылки на внешнюю таблицу
-    bool    fieldreference;  /// признак того, что поле - ссылка
-    /// поле, значение и имя которого будут выводиться в !РЕДАКТОРЕ! вместо текущего
-    /// должно быть указано поле из СЛИНКОВАННОЙ таблицы, а не из текущей!
-    QString  alterfield;
-    QVariant alterdata;
+    QStringList variantsforenum;                                                /// варианты значений для поля с realtype = enum
 };
 
 #endif // MYSQLFIELD_H

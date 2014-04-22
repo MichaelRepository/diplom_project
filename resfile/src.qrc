@@ -49,11 +49,22 @@
         <file>table_.svg</file>
         <file>table_tmp.svg</file>
         <file>table_row_ed.svg</file>
+        <file>trash_.svg</file>
+        <file>filter_group_icon.svg</file>
+        <file>add_filter-icon.svg</file>
+        <file>add_filter_group_icon.svg</file>
     </qresource>
     <qresource prefix="/style">
         <file>WowStyle.qss</file>
     </qresource>
     <qresource prefix="/png">
         <file>search-icon.png</file>
+    </qresource>
+    <qresource prefix="/for_tree">
+        <file>stylesheet-vline.png</file>
+        <file>stylesheet-branch-more.png</file>
+        <file>stylesheet-branch-end.png</file>
+        <file>stylesheet-branch-open.svg</file>
+        <file>stylesheet-branch-closed.svg</file>
     </qresource>
 </RCC>

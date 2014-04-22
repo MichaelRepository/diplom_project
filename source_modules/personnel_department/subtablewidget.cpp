@@ -8,10 +8,10 @@ SubTableWidget::SubTableWidget(QWidget *parent) :
     ui->setupUi(this);
 
     statusbar       = new QStatusBar(this);
-    //header          = new QSpreadsheetHeaderView(Qt::Horizontal,this);
-    //standartheader  = new QHeaderView(Qt::Horizontal,this);
-    movable         = true;                                                     /// разрешить перемещение окна
-    //ui->tableView->setHorizontalHeader(header);
+    movable         = true;
+    ui->label->     setVisible    (true);
+    ui->toolsframe->setVisible    (true);
+    ui->tableView-> setFocusPolicy(Qt::NoFocus);
 
     QLayout* layoutWidget = ui->gridLayout_2;
     layoutWidget->setContentsMargins(0,0,0,0);
@@ -24,7 +24,7 @@ SubTableWidget::~SubTableWidget()
     delete ui;
 }
 
-void SubTableWidget::setTableModel(QAbstractTableModel *model)
+void SubTableWidget::setTableModel(QAbstractItemModel *model)
 {
    tablemodel = model;
    ui->tableView->setModel(tablemodel);
@@ -38,24 +38,14 @@ void SubTableWidget::setTitleText(QString text)
 }
 
 void SubTableWidget::setDisplayMode(bool titleVisible,
-                                    bool editbuttonpanelVisible,
-                                    bool headerMenuVisible,
+                                    bool menuPanelVisible,
                                     bool dlgMovable,
                                     Qt::FocusPolicy tablefocuspolicy)
 {
     movable = dlgMovable;
-    ui->label->setVisible(titleVisible);
-    ui->toolsframe->setVisible(editbuttonpanelVisible);
-    ui->tableView->setFocusPolicy(tablefocuspolicy);
-    /*if(!headerMenuVisible)
-    {
-        ui->tableView->setHorizontalHeader(standartheader);
-        ui->tableView->resizeColumnsToContents();
-        ui->tableView->resizeRowsToContents();
-    }*/
-    //QString style = "QAbstractItemView:item::selected{color:#fff;background-color: #3399FF;}";
-
-    //if(tablefocuspolicy == Qt::NoFocus) ui->tableView->setStyleSheet(style);
+    ui->label->     setVisible    (titleVisible);
+    ui->toolsframe->setVisible    (menuPanelVisible);
+    ui->tableView-> setFocusPolicy(tablefocuspolicy);
 }
 
 void SubTableWidget::mousePressEvent(QMouseEvent *event)
@@ -94,7 +84,27 @@ void SubTableWidget::setRow(int row)
                                             QItemSelectionModel::Rows);
 }
 
+int SubTableWidget::getSelectedRowIndex()
+{
+    return ui->tableView->selectionModel()->selectedRows(0).first().row();
+}
+
 void SubTableWidget::on_tableView_clicked(const QModelIndex &index)
 {
     emit newrowselected(index.row() );                                          /// сообщить - новая строка выделена
+}
+
+void SubTableWidget::on_Edit_button1_clicked()
+{
+    emit editButtonClicked();
+}
+
+void SubTableWidget::on_Add_button1_clicked()
+{
+    emit addButtonClicked();
+}
+
+void SubTableWidget::on_Delete_button1_clicked()
+{
+    emit removeButtonClicked();
 }

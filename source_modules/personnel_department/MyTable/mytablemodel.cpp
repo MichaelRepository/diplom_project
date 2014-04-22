@@ -24,6 +24,7 @@ void MyTableModel::setTableObject(MyTable *tableobj)
 void MyTableModel::refresh()
 {
     beginResetModel();
+
     endResetModel();
 }
 
@@ -34,6 +35,7 @@ int MyTableModel::columnCount(const QModelIndex &parent) const
 
 int MyTableModel::rowCount(const QModelIndex &parent) const
 {
+    if(parent.isValid()) return 0;
     return table->getRecordsCount();
 }
 

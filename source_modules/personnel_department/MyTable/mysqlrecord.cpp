@@ -4,18 +4,29 @@ MySqlRecord::MySqlRecord()
 {
 }
 
-void MySqlRecord::append(const MySqlField &field)
+void MySqlRecord::append(const MyField *field)
 {
     fields.append(field);
+    values.append(QVariant());
 }
 
-void MySqlRecord::replace(int pos, const MySqlField &field)
+void MySqlRecord::append(const MyField *field, QVariant value)
+{
+    fields.append(field);
+    values.append(value);
+}
+
+void MySqlRecord::replace(int pos, const MyField *field)
 {
     if(pos >= 0 && pos <fields.size())
+    {
         fields[pos] = field;
+        values[pos].clear();
+        if(altervalues.contains(pos)) altervalues.remove(pos);
+    }
 }
 
-void MySqlRecord::insert(int pos, const MySqlField &field)
+void MySqlRecord::insert(int pos, const MyField *field)
 {
     fields.insert(pos, field);
 }
@@ -23,13 +34,17 @@ void MySqlRecord::insert(int pos, const MySqlField &field)
 void MySqlRecord::remove(int pos)
 {
     if(pos >= 0 && pos <fields.size())
+    {
         fields.removeAt(pos);
+        values.removeAt(pos);
+        if(altervalues.contains(pos)) altervalues.remove(pos);
+    }
 }
 
 QVariant MySqlRecord::value(int i) const
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].value();
+        return values[i];
     return QVariant();
 }
 
@@ -37,119 +52,91 @@ QVariant MySqlRecord::value(const QString &name) const
 {
     int pos = indexOf(name);
     if(pos >= 0 && pos <fields.size())
-        return fields[pos].value();
+        return values[pos];
     return QVariant();
 }
 
 bool MySqlRecord::isVisibleField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].isVisible();
+        return fields[i]->isVisible;
     return false;
 }
 
 bool MySqlRecord::isEditableField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].isEditable();
+        return fields[i]->isEditable;
     return false;
 }
 
-bool MySqlRecord::isReference(int i)
+bool MySqlRecord::isPrimary(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].isReference();
+        return fields[i]->isPrimary;
+    return false;
+}
+
+bool MySqlRecord::isForeign(int i)
+{
+    if(i >= 0 && i <fields.size())
+        return fields[i]->isForeign;
     return false;
 }
 
 QString MySqlRecord::alterNameOfField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].alterName();
+        return fields[i]->altername;
     return QString();
 }
 
 QString MySqlRecord::validatorOfField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].validator();
+        return fields[i]->validator;
     return QString();
 }
 
 QString MySqlRecord::realTypeOfField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].realType();
+        return fields[i]->realtype;
     return QString();
 }
 
 QString MySqlRecord::alterField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].alterField();
+        return fields[i]->alterfield;
     return QString();
 }
 
 QVariant MySqlRecord::alterData(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].alterData();
+    if(altervalues.contains(i) ) return altervalues[i];
     return QVariant();
 }
 
 MyDataReference MySqlRecord::referenceDataOfField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].referenceData();
+        return fields[i]->reference;
     return MyDataReference();
 }
 
 void MySqlRecord::setValue(int i, const QVariant &val)
 {
     if(i >= 0 && i <fields.size())
-        fields[i].setValue(val);
-}
-
-void MySqlRecord::setAlterName(int i, const QString &altername)
-{
-    if(i >= 0 && i <fields.size())
-        fields[i].setAlterName(altername);
-}
-
-void MySqlRecord::setValidator(int i, QString valid)
-{
-    if(i >= 0 && i <fields.size())
-        fields[i].setValidator(valid);
-}
-
-void MySqlRecord::setEditable(int i, bool editable)
-{
-    if(i >= 0 && i <fields.size())
-        fields[i].setEditable(editable);
-}
-
-void MySqlRecord::setVisible(int i, bool visible)
-{
-    if(i >= 0 && i <fields.size())
-        fields[i].setVisible(visible);
-}
-
-void MySqlRecord::setRealType(int i, QString type)
-{
-    if(i >= 0 && i <fields.size())
-        fields[i].setRealType(type);
-}
-
-void MySqlRecord::setAlterField(int i, QString alterfeld)
-{
-    if(i >= 0 && i <fields.size())
-        fields[i].setAlterField(alterfeld);
+        values[i] = val;
 }
 
 void MySqlRecord::setAlterData(int i, QVariant data)
 {
     if(i >= 0 && i <fields.size())
-        fields[i].setAlterData(data);
+    if(altervalues.contains(i)) altervalues[i] = data;
+    else altervalues.insert(i,data);
 }
 
 void MySqlRecord::setValue(const QString &name, const QVariant &val)
@@ -157,41 +144,11 @@ void MySqlRecord::setValue(const QString &name, const QVariant &val)
         setValue(indexOf(name), val);
 }
 
-void MySqlRecord::setAlterName(const QString& name, const QString &altername)
-{
-    setAlterName(indexOf(name), altername);
-}
-
-void MySqlRecord::setValidator(const QString& name, QString valid)
-{
-    setValidator(indexOf(name), valid);
-}
-
-void MySqlRecord::setEditable(const QString& name, bool editable)
-{
-    setEditable(indexOf(name), editable);
-}
-
-void MySqlRecord::setVisible(const QString& name, bool visible)
-{
-    setVisible(indexOf(name), visible);
-}
-
-void MySqlRecord::setRealType(const QString& name, QString type)
-{
-    setRealType(indexOf(name), type);
-}
-
-void MySqlRecord::setAlterField(const QString &field, QString alterfeld)
-{
-    setAlterField(indexOf(field), alterfeld);
-}
-
 int MySqlRecord::indexOf(const QString &name) const
 {
     QString nm = name.toUpper();
     for (int i = 0; i < count(); ++i) {
-        if (fields.at(i).name().toUpper() == nm)
+        if (fields.at(i)->name.toUpper() == nm)
         return i;
     }
     return -1;
@@ -200,23 +157,23 @@ int MySqlRecord::indexOf(const QString &name) const
 QString MySqlRecord::fieldName(int i) const
 {
     if(i >= 0 && i <fields.size())
-        return fields[i].name();
+        return fields[i]->name;
     return QString();
 }
 
-MySqlField MySqlRecord::field(int i) const
+const MyField *MySqlRecord::field(int i) const
 {
     if(i >= 0 && i <fields.size())
         return fields[i];
-    return MySqlField();
+    return 0;
 }
 
-MySqlField MySqlRecord::field(const QString &name) const
+const MyField *MySqlRecord::field(const QString &name) const
 {
     int pos = indexOf(name);
     if(pos >= 0 && pos <fields.size())
         return fields[pos];
-    return MySqlField();
+    return 0;
 }
 
 bool MySqlRecord::isEmpty() const
@@ -226,20 +183,17 @@ bool MySqlRecord::isEmpty() const
 
 bool MySqlRecord::contains(const QString &name) const
 {
-    return fields.contains(name)>=0;
+    return (indexOf(name)>-1 );
 }
 
 void MySqlRecord::clear()
 {
     fields.clear();
+    values.clear();
+    altervalues.clear();
 }
 
 int MySqlRecord::count() const
 {
     return fields.size();
 }
-
-
-
-
-

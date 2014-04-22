@@ -26,7 +26,10 @@ SOURCES += main.cpp\
     MyTable/myinfoscheme.cpp \
     MyTable/mysqlrecord.cpp \
     MyTable/mytable.cpp \
-    MyTable/mytablemodel.cpp
+    MyTable/mytablemodel.cpp \
+    myfilterform.cpp \
+    MyTable/myfiltermodel.cpp \
+    MyTable/mydelegateforitemfilter.cpp
 
 HEADERS  += mainwindow.h \
     messdlg.h \
@@ -41,14 +44,19 @@ HEADERS  += mainwindow.h \
     MyTable/mysqlfield.h \
     MyTable/mysqlrecord.h \
     MyTable/mytable.h \
-    MyTable/mytablemodel.h
+    MyTable/mytablemodel.h \
+    myfilterform.h \
+    MyTable/myfilterdata.h \
+    MyTable/myfiltermodel.h \
+    MyTable/mydelegateforitemfilter.h
 
 FORMS    += mainwindow.ui \
     messdlg.ui \
     dbmessdlg.ui \
     authorizdlg.ui \
     dialogeditrecord.ui \
-    subtablewidget.ui
+    subtablewidget.ui \
+    myfilterform.ui
 
 RESOURCES += ../../resfile/src.qrc
 

@@ -29,6 +29,9 @@
    <iconset resource="../../resfile/src.qrc">
     <normaloff>:/svg/user.svg</normaloff>:/svg/user.svg</iconset>
   </property>
+  <property name="sizeGripEnabled">
+   <bool>true</bool>
+  </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="leftMargin">
     <number>6</number>
@@ -256,10 +259,10 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>authorizbt</tabstop>
-  <tabstop>cancelbt</tabstop>
   <tabstop>LoginEdit</tabstop>
   <tabstop>PassEdit</tabstop>
+  <tabstop>authorizbt</tabstop>
+  <tabstop>cancelbt</tabstop>
   <tabstop>checkBox</tabstop>
  </tabstops>
  <resources>

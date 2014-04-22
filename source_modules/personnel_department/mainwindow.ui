@@ -13,10 +13,6 @@
   <property name="windowTitle">
    <string>АС &quot;КОТ&quot;</string>
   </property>
-  <property name="windowIcon">
-   <iconset>
-    <normaloff>:/Awesome.svg</normaloff>:/Awesome.svg</iconset>
-  </property>
   <property name="styleSheet">
    <string notr="true"/>
   </property>

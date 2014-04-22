@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- The icon can be used freely in both personal and commercial projects with no attribution required, but always appreciated. 
+You may NOT sub-license, resell, rent, redistribute or otherwise transfer the icon without express written permission from iconmonstr.com -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   version="1.1"
+   x="0px"
+   y="0px"
+   width="512px"
+   height="512px"
+   viewBox="0 0 512 512"
+   enable-background="new 0 0 512 512"
+   xml:space="preserve"
+   id="svg2"
+   inkscape:version="0.48.4 r9939"
+   sodipodi:docname="filter_group_icon.svg"><metadata
+   id="metadata9"><rdf:RDF><cc:Work
+       rdf:about=""><dc:format>image/svg+xml</dc:format><dc:type
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" /><dc:title></dc:title></cc:Work></rdf:RDF></metadata><defs
+   id="defs7" /><sodipodi:namedview
+   pagecolor="#ffffff"
+   bordercolor="#666666"
+   borderopacity="1"
+   objecttolerance="10"
+   gridtolerance="10"
+   guidetolerance="10"
+   inkscape:pageopacity="0"
+   inkscape:pageshadow="2"
+   inkscape:window-width="640"
+   inkscape:window-height="480"
+   id="namedview5"
+   showgrid="false"
+   inkscape:zoom="0.4609375"
+   inkscape:cx="256"
+   inkscape:cy="256"
+   inkscape:window-x="545"
+   inkscape:window-y="61"
+   inkscape:window-maximized="0"
+   inkscape:current-layer="svg2" />
+
+<path
+   id="filter-5-icon"
+   d="M288.4,338.82l0.124,0.137c0-91.428,102.261-225.125,163.1-288.957h-75.246   c-22.223,23.939-54.509,57.78-87.978,116.359V50h-64.8v116.361c-33.47-58.58-65.756-92.422-87.979-116.361H60.376   c60.839,63.833,163.1,197.529,163.1,288.957l0.125-0.138v36.287h-54.345L256,462l86.744-86.894H288.4V338.82z" />
+
+<polygon
+   transform="matrix(0.46289287,0,0,0.46289287,289.70282,217.39773)"
+   id="plus-2-icon"
+   points="209.529,50 209.529,209.528 50,209.528 50,302.47 209.529,302.47 209.529,462 302.471,462 302.471,302.47 462,302.47 462,209.528 302.471,209.528 302.471,50 " /></svg>

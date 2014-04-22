@@ -40,20 +40,36 @@ class DelegatButton : public QPushButton
 {
     Q_OBJECT
 public:
-    DelegatButton(QSqlQueryModel *model, const MySqlField &_field,
-                  QVariant initialvalue, QWidget *parent):
+    DelegatButton(int fieldnum,
+                  MySqlRecord    *record,
+                  QSqlQueryModel *model,
+                  QWidget *parent):
         QPushButton(parent)
     {
-        field = _field;
+        index = fieldnum;
+        recorddata = record;
         querymodel = model;
         subtableshov = false;
         subtabledlg  = new SubTableWidget(this);
         subtabledlg->setTableModel(model);
-        subtabledlg->setDisplayMode(false,false,false,false,Qt::NoFocus);
+        subtabledlg->setDisplayMode(false,false,false,Qt::NoFocus);
         QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
                          this,        &DelegatButton:: update);
-        subtablecurrentrow = 0;
-        this->setText(initialvalue.toString());
+
+        /// позиционирование на текущей строке субтаблицы
+        int row = 0;
+        QString rv = recorddata->value(index).toString().toUpper();
+        QSqlQuery query = model->query();
+        query.first();
+        do
+        {
+            QString qv = query.value(0).toString().toUpper();
+            if(qv == rv) break;
+            ++row;
+        }
+        while(query.next());
+        subtabledlg->setRow(row);
+        update(row);
     }
 
     void mouseReleaseEvent(QMouseEvent * event){                                /// отобразить виджет субтаблицы при отпускани кнопки
@@ -89,38 +105,43 @@ public:
         subtabledlg->move(this->mapToGlobal( QPoint(0, this->height())) );
         subtabledlg->setWindowFlags(Qt::Popup);
         subtabledlg->setFocusPolicy(Qt::NoFocus);
-        subtabledlg->setDisplayMode(false,false,false,false,Qt::NoFocus);
+        subtabledlg->setDisplayMode(false,false,false,Qt::NoFocus);
         subtabledlg->setFocusProxy(this);
         subtabledlg->resize(this->size().width()+70,200);
         subtabledlg->show();
         subtableshov = true;
     }
 
-    MySqlField getCurrentFieldDAta(){return field;}
     void setcurrentrow(int row){subtablecurrentrow = row; subtabledlg->setRow(row);}
+
 private slots:
     void update(int row)
     {
         subtablecurrentrow = row;
         querymodel->query().seek(subtablecurrentrow);
-        field.setValue(querymodel->query().value(0) );
 
-        if(field.alterField().size() > 0)
+        QString  alterfield = recorddata->alterField(index);
+        QVariant value      = querymodel->query().value(0);
+        QVariant altervalue;
+        recorddata->setValue (index, value);
+        if(!alterfield.isEmpty() )
         {
-            field.setAlterData( querymodel->query().value(field.alterField()) );
-            this->setText(field.alterData().toString());
+            altervalue = querymodel->query().value(alterfield);
+            recorddata->setAlterData(index, altervalue);
         }
-        else
-            this->setText(field.value().toString());
+
+        if(!alterfield.isEmpty()) this->setText(altervalue.toString());
+        else this->setText(value.toString());
 
         this->repaint();
     }
 private:
+    int index;                   /// номер текущего поля
     SubTableWidget *subtabledlg; /// окно для отображения слинкованной таблицы
     QSqlQueryModel *querymodel;  /// модель, отображаемая в окне
-    MySqlField     field;
+    MySqlRecord    *recorddata;
     bool subtableshov;           /// состояние видимости окна
-    int subtablecurrentrow;      /// текущая выделенная строка в слинкованной таблице
+    int  subtablecurrentrow;     /// текущая выделенная строка в слинкованной таблице
 };
 
 class RecordDelegate : public QStyledItemDelegate

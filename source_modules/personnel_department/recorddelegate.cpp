@@ -25,7 +25,7 @@ void RecordDelegate::initDelegate()
     /// данных из слинкованных таблиц
     for(int i = 0; i < recorddata->count(); ++i)
     {
-        if(recorddata->isReference(i))
+        if(recorddata->isForeign(i))
         {
             MyDataReference reference = recorddata->referenceDataOfField(i);
             QSqlQueryModel *query = new QSqlQueryModel(this);
@@ -35,17 +35,6 @@ void RecordDelegate::initDelegate()
                 dbMessDlg dlg;
                 dlg.showdbmess(db.lastError());
                 return ;
-            }
-            if(recorddata->alterField(i).size() >0) /// подмена значения
-            {
-                while(query->query().next())
-                {
-                    if(query->query().value(0) == recorddata->value(i))
-                    {
-                        recorddata->setAlterData(i,query->query().value(recorddata->alterField(i)));
-                        break;
-                    }
-                }
             }
             QStringList::iterator itr;
             int j = 0;
@@ -68,17 +57,11 @@ QWidget *RecordDelegate::createEditor(QWidget *parent,
     int indexrow = index.row();
 
     /// проверка является ли поле внешним ключем (ссылающимся на внешнюю таблицу)
-    if(recorddata->isReference(indexrow) )
+    if(recorddata->isForeign(indexrow) )
     {
         /// вернуть в качестве редактора - диалог вывода субтаблицы
         QSqlQueryModel* model  = querylist[indexrow];
-        MySqlField      field  = recorddata->field(indexrow);
-        QVariant firstvalue;
-        if(field.alterField().size() >0)
-            firstvalue = field.alterData();
-        else
-            firstvalue = field.value();
-        DelegatButton *button1 = new DelegatButton(model, field,firstvalue, parent);
+        DelegatButton *button1 = new DelegatButton(indexrow, recorddata, model, parent);
         return button1;
     }
 
@@ -110,7 +93,7 @@ void RecordDelegate::setEditorData(QWidget *editor,
 {
     QVariant::Type curtype = index.data().type();                               /// определяет тип данны
 
-    if(recorddata->isReference(index.row()))
+    if(recorddata->isForeign(index.row()))
     {
         return ;
     }
@@ -151,13 +134,12 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
 {
     QVariant::Type curtype = index.data().type();
     /// проверка является ли поле внешним ключем (ссылающимся на внешнюю таблицу)
-    if(recorddata->isReference(index.row()) )
+    if(recorddata->isForeign(index.row()) )
     {
-        DelegatButton *button = static_cast<DelegatButton*>(editor);
-        MySqlField fieldata = button->getCurrentFieldDAta();
+        /*DelegatButton *button = static_cast<DelegatButton*>(editor);
         recorddata->setValue(index.row(),fieldata.value());
         if(fieldata.alterField().size() > 0)
-            recorddata->setAlterData(index.row(),fieldata.alterData());
+            recorddata->setAlterData(index.row(),fieldata.alterData());*/
         return ;
     }
 
@@ -165,13 +147,15 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
     case QVariant::Date:{
         QDateEdit* dataedit = static_cast<QDateEdit*>(editor);                  /// класс widget преобразуется в реальный класс
         Q_ASSERT(dataedit);
-        model->setRecordData(index, dataedit->date());                          /// передать данные из редактора в модель
+        recorddata->setValue(index.row(), QVariant(dataedit->date() ) );
+        //model->setRecordData(index, dataedit->date());                          /// передать данные из редактора в модель
         break;
     }
     case QVariant::String:{
         QLineEdit* lineedit = static_cast<QLineEdit*>(editor);
         Q_ASSERT(lineedit);
-        model->setRecordData(index, QVariant(lineedit->text()));
+        recorddata->setValue(index.row(), QVariant(lineedit->text() ) );
+        //model->setRecordData(index, QVariant(lineedit->text()));
         break;
     }
     case QVariant::Int:{
@@ -179,7 +163,7 @@ void RecordDelegate::setModelData(QWidget *editor, QAbstractItemModel *model,
         Q_ASSERT(lineedit);
         bool isnum;
         int num = lineedit->text().toInt(&isnum);
-        if(isnum) model->setRecordData(index, num);
+        if(isnum) recorddata->setValue(index.row(), QVariant(num))/*model->setRecordData(index, num)*/;
         break;
     }
     default: QStyledItemDelegate::setModelData(editor, model, index);
