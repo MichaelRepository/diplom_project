@@ -32,11 +32,17 @@
 #include "MyTable/myeditrecordmodel.h"
 #include "MyTable/mytablemodel.h"
 
-enum Tables{SPECIALITY, GROUP, STUDENT};                                        /// список основных таблиц
-enum extraTables{CITIZENSHIPLIST, PRIVILEGESCATEGORY, SCHOOL, TYPESCHOOL,       /// справочники - таблицы категорий
-                 TYPEEDUCATION};
+#include "QuaZIP/quazip.h"
+#include "QuaZIP/quazipfile.h"
+#include "MyReport/mydocumentodf.h"
 
-enum ModeSwitchingTable{BUTTONMODE, MOUSEMODE};                                 /// режим переключения между таблицами
+enum Tables{SPECIALITY, GROUP, STUDENT};                                        /// список основных таблиц
+
+/*enum extraTables{CITIZENSHIPLIST,
+ * PRIVILEGESCATEGORY,
+ * SCHOOL,
+ * TYPESCHOOL,
+ * TYPEEDUCATION};*/
 
 namespace Ui {
 class MainWindow;
@@ -55,7 +61,7 @@ public:
 
 private slots:
     void refresh_menu();                                                        /// обновить меню
-    void set_current_table(Tables table, ModeSwitchingTable mode);              /// установить таблицу
+    void set_current_table(Tables table);                                       /// установить таблицу
 
     /// слоты - обработчики событий виджетов
     void on_Switch_table_spec_button_clicked();
@@ -64,11 +70,12 @@ private slots:
     void on_tableView_doubleClicked(const QModelIndex &index);
     void on_tableView_clicked      (const QModelIndex &index);
 
-    void on_Edit_button1_clicked();
     void on_Refresh_button1_clicked();
+    void on_Edit_button1_clicked();
     void on_Add_button1_clicked();
     void on_Delete_button1_clicked();
     void on_Filter_checked_button_clicked();
+    void on_Master_filter_button_clicked();
 
     void searchStart();
     void searchBtMenuTriggered(QAction* action);
@@ -77,9 +84,19 @@ private slots:
     void subtableRecordAdd();
     void subtableRecordRemove();
     void subtableRowSelected(int row);
+    void setGlobalTableFiltered();
     void tableView_items_selected();                                            /// обработка выделения элементов таблицы
 
-    void on_Master_filter_button_clicked();
+    void on_Filter_selected_button_clicked();
+    void on_Filter_unselected_button_clicked();
+
+    void sortUP  (int column, QString name);
+    void sortDown(int column, QString name);
+    void clearOrders();
+
+    void on_tabWidget_currentChanged(int index);
+    void on_Refresh_button2_clicked();
+    void on_Create_Report_bt1_clicked();
 
 private:
     void initTables();
@@ -87,6 +104,14 @@ private:
     void remove_records (MyTable *table);                                       /// удалить записи
     void edit_records   (MyTable *table);                                       /// изменить запись
     bool refresh_table  (MyTable *table);
+
+    void getReportTemplatesTable();                                             /// запросить данне с шаблонов для текущего пользователя
+    void templatSelected(const QModelIndex &current,
+                         const QModelIndex &previous);
+    void createReport();
+
+    void createFilterForSelectedRecords();
+    void createFilterForUnSelectedRecords();
 
     void prepareSearchData(const QList<const MyField *>& fields,
                            QMap<QString, QString>& data, QMenu *menu);
@@ -107,9 +132,12 @@ private:
     QLineEdit*              Status_search_edit;                                 /// поле быстрого поиска
     QToolButton*            Status_search_bt;
     /// Элементы контекстного меню таблицы
+    QAction*                Table_refresh;
     QAction*                Table_record_edit;
     QAction*                Table_record_add;
     QAction*                Table_record_remove;
+    QAction*                Table_set_filtered;
+    QAction*                Table_master_filter;
 
     QSpreadsheetHeaderView* header;                                             /// заголовок таблицы (вьювера)
 
@@ -120,8 +148,9 @@ private:
     /// источник метаданных
     MyInfoScheme* metadatasource;
     /// модель данных для отобраения таблицы
-    MyTableModel* tablemodel;
-    MyTableModel* subtablemodel;
+    MyTableModel*   tablemodel;
+    MyTableModel*   subtablemodel;
+    QSqlQueryModel* reportstablemodel;
     /// Таблицы
     MyTable *globaltable;                                                       /// глобальный указатель на текущую главную таблицу
     MyTable *globalsubtable;                                                    /// глобальный указатель на текущую субтаблицу
@@ -143,7 +172,7 @@ private:
     QMenu* search_menu_for_group;
     QMenu* search_menu_for_stud;
 
-    QSettings*              setting;                                            /// запись/чтение параметров приложения
+    QSettings* setting;                                                         /// запись/чтение параметров приложения
 };
 
 #endif // MAINWINDOW_H

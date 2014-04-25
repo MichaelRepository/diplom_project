@@ -4,9 +4,9 @@ MyTableModel::MyTableModel(QObject *parent) :
     QAbstractTableModel(parent)
 {
     QSize size(16,16);
-    icoPKey.addFile(":/svg/key_icon.svg", size);
-    icoFKey.addFile(":/svg/fkey-icon.svg",size);
-    icoLink.addFile(":/svg/table_.svg",   size);
+    icoPKey.addFile(":/png/iconmonstr-key-icon-16.png", size);
+    icoFKey.addFile(":/png/iconmonstr-key-3-icon-16.png",size);
+    icoLink.addFile(":/png/table_.png",   size);
 }
 
 MyTableModel::~MyTableModel()
@@ -66,7 +66,10 @@ QVariant MyTableModel::headerData(int section, Qt::Orientation orientation, int 
 {
     if(role != Qt::DisplayRole || orientation != Qt::Horizontal) return QVariant();
 
-    return table->displayFieldName(section);
+    QString sectionname = table->displayFieldAlterName(section);
+    if(sectionname.isEmpty()) sectionname = table->displayFieldName(section);
+
+    return sectionname;
 }
 
 bool MyTableModel::setRecordData(const QModelIndex &index, const QVariant &value, int role)

@@ -29,16 +29,25 @@
 #define QSPREADSHEETHEADERVIEW_H
 
 #include <QHeaderView>
+#include <QPoint>
 
 class QSpreadsheetHeaderView : public QHeaderView
 {
     Q_OBJECT
 public:
     QSpreadsheetHeaderView(Qt::Orientation orientation, QWidget * parent = 0);
+    void setCustomOrderData(QMap<int, QString> data);
+    QSize sectionSizeFromContents(int logicalIndex) const;
 
 signals:
     void sortUp     (int column, QString name);                                 /// сигнал сортировки по возрастанию
     void sortDown   (int column, QString name);                                 /// по убыванию
+    void orderClear();
+
+private slots:
+    void setSortUp     (int column, QString name);
+    void setSortDown   (int column, QString name);
+    void clearOrders();
 
 private:
     /// обработка событий
@@ -48,25 +57,34 @@ private:
                              int logicalIndex) const;
 
     /// прорисовка дополнительных элементов
-    void drawMenuButton (QPainter *painter, int logicalIndex,
-                        bool enabled) const;
+    void drawMenuButton (QPainter *painter, int logicalIndex, bool enabled) const;
     void drawPrevButton (QPainter *painter, int logicalIndex) const;
     void drawNextButton (QPainter *painter, int logicalIndex) const;
+    void drawOrderSign  (QPainter *painter, int logicalIndex) const;
 
     QRect sectionRect   (int logicalIndex) const;                               /// получить плоскость заголовка столбца
     QRect buttonMenuRect(int logicalIndex) const;                               /// получить плоскость кнопки меню
     QRect prevRect      (int logicalIndex) const;                               /// получить плоскость кнопки "<"
     QRect nextRect      (int logicalIndex) const;                               /// получить плоскость кнопки ">"
+    QRect signOrd       (int logicalIndex) const;
 
     int prevlogicalIndex;                                                       /// индекс предыдущего выбранного хедера
 
     /// объекты меню
     QMenu*   menu;
     QAction* hideCol;
+    QAction* resOrder;
     QAction* sortAZ;
     QAction* sortZA;
-    QAction* filter;
     QImage*  svgImage;
+
+    QPixmap* AZmap;
+    QPixmap* ZAmap;
+
+    QIcon* icoAZ;
+    QIcon* icoZA;
+
+    QMap<int, QString> customOrder;
 };
 
 #endif /* QSPREADSHEETHEADERVIEW_H */

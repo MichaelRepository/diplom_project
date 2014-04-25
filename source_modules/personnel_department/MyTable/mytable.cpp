@@ -124,7 +124,7 @@ bool MyTable::updateData()
     if(!init) return false;
     tablequery.clear();
     QString querytext;
-    if(!filtered)
+    if(!filtered && mainselect.customOrderIsEmpty())
         querytext = mainselecttext;
     else
         querytext = mainselect.selectQueryText(filtered);
@@ -135,7 +135,88 @@ bool MyTable::updateData()
         filtered = false;
         return false;
     }
+    sqlerror = QSqlError();
 
+    return true;
+}
+
+bool MyTable::setUpdateGroupOfRecords(const QList<int> &records)
+{
+    if(records.size() < 1) return false;
+    QList<QPair<QString, QString> > fieldvalues;
+    for(int i = 0; i < editablerecord.count(); ++i)
+    {
+        QString value = editablerecord.value(i).toString();
+        QString field = editablerecord.fieldName(i);
+        if(field.isEmpty() ) return false;
+        if(!value.isEmpty()) fieldvalues.append(qMakePair(field, value) );
+    }
+    return setUpdateGroupOfRecords(records, fieldvalues);
+}
+
+bool MyTable::setUpdateGroupOfRecords(const QList<int> &records,
+                                      const QList<QPair<QString, QString> > &field_value_list)
+{
+    if(!init || records.size() > tablequery.size() ) return false;
+
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    if(!db.open()) return false;
+
+    QStringList tables;                                                         /// список обновляемых таблиц
+    QMap<QString, QStringList> valueslist;
+    QMap<QString, QString>     primarylist;
+    QMap<QString, QStringList> whereitems;                                      /// элементы участка where
+
+    QList<QPair<QString, QString> >::const_iterator itr;
+    for(itr = field_value_list.begin(); itr != field_value_list.end(); ++itr)
+    {
+        int fieldindex = fieldRealIndexOf((*itr).first);
+        if(fieldindex == -1) return false;                                      /// отсутствует запрашиваемое поле
+        MyField* field = &fields[fieldindex];
+        if(!tables.contains(field->table->name) )
+        {
+            tables.append     (field->table->name);
+
+            valueslist.insert (field->table->name, QStringList() );
+            whereitems.insert (field->table->name, QStringList() );
+            primarylist.insert(field->table->name, field->table->primarykey);
+        }
+        valueslist[field->table->name].append(field->table->name+"."+
+                                              (*itr).first+" = "+(*itr).second);
+    }
+
+    QList<int>::const_iterator itrr;
+    for(itrr = records.begin(); itrr != records.end(); itrr++)
+    {
+        if(!tablequery.seek((*itrr) ) ) return false;
+        QStringList::const_iterator itrt;
+        for(itrt = tables.begin(); itrt != tables.end(); ++itrt)
+        {
+            QStringList *wherelist = &whereitems[(*itrt) ];
+            QString primary = primarylist[(*itrt)];
+            QString pkvalue = tablequery.value(primary).toString();
+            wherelist->append((*itrt)+"."+primary+" = "+"'"+pkvalue+"'");
+        }
+    }
+
+    QSqlQuery query(db);
+    db.transaction();
+    QStringList::const_iterator itrt1;
+    for(itrt1 = tables.begin(); itrt1 != tables.end(); ++itrt1)
+    {
+        QString querytext = "UPDATE "+(*itrt1)+" SET "+
+                            valueslist[(*itrt1)].join(", ")+" WHERE "+
+                            whereitems[(*itrt1)].join(" OR ");
+        query.prepare(querytext);
+        if(!query.exec())
+        {
+            sqlerror = query.lastError();
+            db.rollback();
+            return false;
+        }
+        sqlerror = QSqlError();
+    }
+    db.commit();
     return true;
 }
 
@@ -176,9 +257,11 @@ bool MyTable::setUpdateDataFields()
         query.prepare(*itrl);
         if(!query.exec())
         {
+            sqlerror = query.lastError();
             db.rollback();
             return false;
         }
+        sqlerror = QSqlError();
     }
     db.commit();/// окончить транзакцию
     return true;
@@ -276,9 +359,10 @@ bool MyTable::setInsertDataFields()
                 db.rollback();
                 return false;
             }
+            sqlerror = QSqlError();
             QVariant lastid = query.lastInsertId();
             if(lastid.isValid())
-                PKvalues.insert((*itrt1)->name,lastid);                             /// получить значение id объекта последней вставленной строки
+                PKvalues.insert((*itrt1)->name,lastid);                         /// получить значение id объекта последней вставленной строки
         }
 
     }
@@ -287,30 +371,51 @@ bool MyTable::setInsertDataFields()
     return true;
 }
 
-bool MyTable::removeRecord(int row)
+bool MyTable::removeRecords(const QList<int> records)
 {
-    if(!tablequery.seek(row)){sqlerror = tablequery.lastError();  return false;}
+    if(records.size() <= 0) return false;
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     if(!db.open()){sqlerror = db.lastError(); return false;}
 
     db.transaction();
-    QList<MySubtable>::const_iterator itr;
-    int index = 0;
-    for(itr = subtables.begin(); itr != subtables.end(); ++itr)
+    QList<int>::const_iterator itrr;
+    for(itrr = records.begin(); itrr!=records.end(); ++itrr)
     {
-        QString querytex = "DELETE FROM "+(*itr).name+" WHERE "+(*itr).primarykey+" = ";
-        querytex += "'"+tablequery.value((*itr).primarykey).toString()+"'";
-        QSqlQuery query(db);
-        if(!query.exec(querytex) )
+        if(!tablequery.seek((*itrr) ) )
         {
-            sqlerror = db.lastError();
             db.rollback();
             return false;
         }
-        ++index;
+
+        QList<MySubtable>::const_iterator itr;
+        for(itr = subtables.begin(); itr != subtables.end(); ++itr)
+        {
+            QVariant pkvalue = tablequery.value((*itr).primarykey );
+            if(pkvalue.isValid() && !pkvalue.isNull())
+            {
+                QString querytex = "DELETE FROM "+(*itr).name+
+                                   " WHERE "+(*itr).primarykey+" = "+
+                                   "'"+pkvalue.toString()+"'";
+                QSqlQuery query(db);
+                if(!query.exec(querytex) )
+                {
+                    sqlerror = db.lastError();
+                    db.rollback();
+                    return false;
+                }
+                sqlerror = QSqlError();
+            }
+        }
     }
     db.commit();
     return true;
+}
+
+bool MyTable::removeRecord(int row)
+{
+    QList<int> records;
+    records << row;
+    return removeRecords(records);
 }
 
 bool MyTable::isFiltered() const
@@ -421,6 +526,24 @@ QList<const MyField *> MyTable::getJoinedFieldsList() const
     return result;
 }
 
+QMap<int, QString> MyTable::getCustomOrdersData() const
+{
+    if(!init ) return QMap<int, QString> ();
+    return mainselect.getCustomOrdersData();
+}
+
+void MyTable::setCustomOrderData(int column, QString data)
+{
+    if(!init ) return ;
+    mainselect.setCustomOrderData(column, data);
+}
+
+void MyTable::clearCustomOrdersData()
+{
+    if(!init ) return ;
+    mainselect.clearCustomOrdersData();
+}
+
 bool MyTable::contains(const QString &field) const
 {
     if(fields.size() == 0) return false;
@@ -430,6 +553,34 @@ bool MyTable::contains(const QString &field) const
         if((*itr).name.toUpper() == field.toUpper()) return true;
     }
     return false;
+}
+
+void MyTable::createFilterForRecords(const QList<int> &records)
+{
+    filter->clear();
+    if(!init || records.size() <= 0) return;
+    QList<int>::const_iterator itr;
+
+    QString pkfield = mainselect.getOrderItem(0);
+    int index       = fieldRealIndexOf(pkfield);
+    if(pkfield.isEmpty() || index == -1 ) return ;
+    MyField* field  = &fields[index];
+
+    for(itr = records.begin(); itr != records.end(); ++itr)
+    {
+        if(tablequery.seek((*itr) ) )
+        {
+            QVariant pkvalue = tablequery.value(pkfield);
+            if(pkvalue.isValid() && !pkvalue.isNull() )
+            {
+                MyFilterNode* ornode = new MyFilterNode(0,"OR");
+                MyFilterNode* node   = new MyFilterNode(0, field->table->name, pkfield,
+                                                        "=", "'"+pkvalue.toString()+"'");
+                ornode->addChild(node);
+                filter->addChild(ornode);
+            }
+        }
+    }
 }
 
 void MyTable::createQuickFilter(const QString& field, const QString& f_operator,

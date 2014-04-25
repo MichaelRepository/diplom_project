@@ -36,21 +36,61 @@ QSpreadsheetHeaderView::QSpreadsheetHeaderView(Qt::Orientation orientation,
     setAttribute(Qt::WA_Hover, true);                                           /// установка атрибута, обеспечивающего перерисовку компонента при покидании и наведении мыши
 
     menu = new QMenu(this);                                                     /// создание меню
-    hideCol = menu->addAction(QIcon(":/svg/eye-icon.svg"),"Скрыть столбец");
-    sortAZ = menu->addAction(QIcon(":/svg/sortdown-icon.svg"),
-                             "Сортировка по убыванию");
-    sortZA = menu->addAction(QIcon(":/svg/sortup-icon.svg"),
-                             "Сортировка по возрастанию");
-    filter = menu->addAction(QIcon(":/svg/filter-icon.svg"),"Быстрый фильтр");
+
+    icoAZ = new QIcon(":/svg/sortdown-icon.svg");
+    icoZA = new QIcon(":/svg/sortup-icon.svg");
+
+    AZmap = new QPixmap(":/png/down.png");
+    ZAmap = new QPixmap(":/png/up.png");;
+
+    hideCol = menu->addAction(QIcon(":/svg/eye-icon.svg"),    "Скрыть столбец");
+    sortAZ  = menu->addAction(*icoAZ,  "Сортировка по убыванию");
+    sortZA  = menu->addAction(*icoZA,  "Сортировка по возрастанию");
+    resOrder= menu->addAction("Отменить сортировку всех полей");
 
     /// прорисовка SVG изображения
-    QSvgRenderer renderer(QString(":/svg/menu-icon.svg"));
-    svgImage = new QImage(40, 40, QImage::Format_ARGB32);
+    QSvgRenderer renderer(QString(":/svg/menu-icon.svg") );
+    svgImage = new QImage(20, 20, QImage::Format_ARGB32);
     svgImage->fill(QColor(246,246,246));
     QPainter imgpainter(svgImage);
+    imgpainter.setRenderHint(QPainter::SmoothPixmapTransform);
     renderer.render(&imgpainter);
+    setDefaultAlignment(Qt::AlignLeft);
 
     prevlogicalIndex = -1;
+}
+
+void QSpreadsheetHeaderView::setCustomOrderData(QMap<int, QString> data)
+{
+    customOrder = data;
+}
+
+QSize QSpreadsheetHeaderView::sectionSizeFromContents(int logicalIndex) const
+{
+    QSize ressize = QHeaderView::sectionSizeFromContents(logicalIndex);
+    ressize.setWidth(ressize.width()+25);
+
+    return ressize;
+}
+
+void QSpreadsheetHeaderView::setSortUp(int column, QString name)
+{
+    if(!customOrder.contains(column) ) customOrder.insert(column, "ASC");
+    else customOrder[column] = "ASC";
+    emit sortDown(column+1, name);
+}
+
+void QSpreadsheetHeaderView::setSortDown(int column, QString name)
+{
+    if(!customOrder.contains(column) ) customOrder.insert(column, "DESC");
+    else customOrder[column] = "DESC";
+    emit sortUp(column+1, name);
+}
+
+void QSpreadsheetHeaderView::clearOrders()
+{
+    customOrder.clear();
+    emit orderClear();
 }
 
 void QSpreadsheetHeaderView::mousePressEvent ( QMouseEvent * event )
@@ -78,10 +118,9 @@ void QSpreadsheetHeaderView::mousePressEvent ( QMouseEvent * event )
             hideSection(logicalIndex);
             updateSection(logicalIndex-1);
         }
-        if (res == sortAZ) {}            
-            emit sortDown(colnum, colname);
-        if (res == sortZA) {}
-            emit sortUp(colnum, colname);
+        if (res == sortAZ) setSortUp  (colnum, colname);
+        if (res == sortZA) setSortDown(colnum, colname);
+        if (res == resOrder) clearOrders();
 
         updateSection(logicalIndex);                                            /// выполнил действие - обнови секцию!
     }
@@ -119,6 +158,13 @@ void QSpreadsheetHeaderView::paintSection(QPainter *painter, const QRect &rect,
 
     if (!rect.isValid() || isSortIndicatorShown())
         return;
+
+    if(customOrder.contains(logicalIndex+1))
+    {
+        if(customOrder[logicalIndex+1] == "ASC" ||
+           customOrder[logicalIndex+1] == "DESC" )
+            drawOrderSign(painter, logicalIndex);
+    }
 
     if (isSectionHidden(logicalIndex - 1)) {
         drawPrevButton(painter, logicalIndex);
@@ -168,6 +214,12 @@ QRect QSpreadsheetHeaderView::nextRect(int logicalIndex) const
     return QRect(sr.right() - 13, sr.center().y() - 6, 13, 13);
 }
 
+QRect QSpreadsheetHeaderView::signOrd(int logicalIndex) const
+{
+    QRect sr = buttonMenuRect(logicalIndex);
+    return QRect(sr.left()+4, sr.top()+4, 7, 7);
+}
+
 void QSpreadsheetHeaderView::drawMenuButton(QPainter *painter, int logicalIndex,
                                             bool enabled) const
 {
@@ -208,4 +260,16 @@ void QSpreadsheetHeaderView::drawNextButton(QPainter *painter,
     painter->drawLine(rect.right()-4, rect.center().y() - 1, rect.right()-4,
                       rect.center().y() + 1);
     painter->drawPoint(rect.right()-5, rect.center().y());
+}
+
+void QSpreadsheetHeaderView::drawOrderSign(QPainter *painter, int logicalIndex) const
+{
+    QRect ordrect = signOrd(logicalIndex);
+    painter->setPen(QPen(QBrush(),0) );
+
+    painter->setRenderHint(QPainter::HighQualityAntialiasing,   true);
+    painter->setRenderHint(QPainter::SmoothPixmapTransform,     true);
+
+    if(customOrder[logicalIndex+1] == "ASC")  painter->drawPixmap(ordrect, *AZmap);
+    if(customOrder[logicalIndex+1] == "DESC") painter->drawPixmap(ordrect, *ZAmap);
 }

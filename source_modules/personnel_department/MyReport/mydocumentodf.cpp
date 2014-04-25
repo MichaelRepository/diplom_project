@@ -3,7 +3,7 @@
 MyDocumentODF::MyDocumentODF(QObject *parent) :
     QObject(parent)
 {
-    error = NOERROR;
+    error = MYDOC_NOERROR;
     contentfile = 0;
     stylesfile  = 0;
 }
@@ -11,7 +11,7 @@ MyDocumentODF::MyDocumentODF(QObject *parent) :
 bool MyDocumentODF::readDocumentData(QByteArray &data)
 {
     bool result = true;
-    error = NOERROR;
+    error = MYDOC_NOERROR;
     QDialog dlg;
     QGridLayout *layout = new QGridLayout(&dlg);
     QLabel *labelmovie  = new QLabel(&dlg);
@@ -67,7 +67,7 @@ bool MyDocumentODF::writeZippedFiles(QString file)
         if(!zipfile.open(QIODevice::WriteOnly, info) )
         {
             qDebug() << zipfile.errorString();
-            error = ZIPFILEERROR;
+            error = MYDOC_ZIPFILEERROR;
             return false;
         }
 
@@ -114,11 +114,11 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
 
     ///  замена в соответствии с типом объекта подставновки
     switch(objectdata.type){
-    case NOTYPE:
-        error = OBJECTSTRUCTERROR;
+    case MYREP_NOTYPE:
+        error = MYDOC_OBJECTSTRUCTERROR;
         return false;
         break;
-    case TABLE:{
+    case MYREP_TABLE:{
         /// проверка, вложено поле в таблицу (контрольный элемент расположен на два уровня выше поля-переменной)
         QDomNode control = element.parentNode();
         QString tagname;
@@ -132,7 +132,7 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
         if(control.toElement().tagName() != "table:table-cell")
         {
             /// если не вложено - сообщить об ошибке
-            error = OBJECTSTRUCTERROR;
+            error = MYDOC_OBJECTSTRUCTERROR;
             return false;
             /* возможно стоит изменить алгоритм:
              * если поле-переменная находится вне таблицы, необходимо
@@ -144,14 +144,14 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
         if(!objectdata.valueisquery)
         {
             /// если объект не содержит запроса к БД
-            error = OBJECTSTRUCTERROR;
+            error = MYDOC_OBJECTSTRUCTERROR;
             return false;
         }
 
         /// получить данные из БД
         QSqlDatabase db = QSqlDatabase::database(connection);
         QSqlQuery query(db);
-        if(!query.exec(objectdata.value) ) { error = OBJECTSTRUCTERROR; return false;}
+        if(!query.exec(objectdata.value) ) { error = MYDOC_OBJECTSTRUCTERROR; return false;}
         //if(query.size() == 0)              { error = DATANOTFOUND; return false;}
         if(query.size() == 0)
         {
@@ -200,17 +200,17 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
         }
         break;
     }
-    case LIST:{
+    case MYREP_LIST:{
         if(!objectdata.valueisquery)
         {
             /// если объект не содержит запроса к БД
-            error = OBJECTSTRUCTERROR;
+            error = MYDOC_OBJECTSTRUCTERROR;
             return false;
         }
         /// получить данные из БД
         QSqlDatabase db = QSqlDatabase::database(connection);
         QSqlQuery query(db);
-        if(!query.exec(objectdata.value) ) { error = OBJECTSTRUCTERROR; return false;}
+        if(!query.exec(objectdata.value) ) { error = MYDOC_OBJECTSTRUCTERROR; return false;}
         //if(query.size() == 0)              { error = DATANOTFOUND; return false;}
         if(query.size() == 0)
         {
@@ -237,7 +237,7 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
         }
         break;
     }
-    case LINE:{
+    case MYREP_LINE:{
         QDomNode parentnode = replaceablenode.parentNode();
         QDomNode newline = dom->createElement("text:span");/// новый элемент
         /// заменить и удалить поле-ссылку
@@ -249,7 +249,7 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
         {
             QSqlDatabase db = QSqlDatabase::database(connection);
             QSqlQuery query(db);
-            if(!query.exec(objectdata.value) ) { error = OBJECTSTRUCTERROR; return false;}
+            if(!query.exec(objectdata.value) ) { error = MYDOC_OBJECTSTRUCTERROR; return false;}
             if(query.size() != 0)
             {
                 query.first();
@@ -276,19 +276,19 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
 
     /// выделить тип объекта и строку запроса
     QRegExp rx("^\\s*\\b(TABLE|LIST|LINE|VARIABLE)\\b\\s*=\\s*(.*)",Qt::CaseInsensitive);
-    if(!rx.exactMatch(value) ){error = OBJECTSTRUCTERROR; return MyRepObjectData();}
+    if(!rx.exactMatch(value) ){error = MYDOC_OBJECTSTRUCTERROR; return MyRepObjectData();}
 
     objtypetext        = rx.cap(1).simplified();                                /// тип объекта
     resobjdata.value   = rx.cap(2).simplified();                                /// значение объекта
 
-    if(objtypetext.toUpper() == "TABLE") resobjdata.type = TABLE;
-    if(objtypetext.toUpper() == "LIST")  resobjdata.type = LIST;
-    if(objtypetext.toUpper() == "LINE")  resobjdata.type = LINE;
+    if(objtypetext.toUpper() == "TABLE") resobjdata.type = MYREP_TABLE;
+    if(objtypetext.toUpper() == "LIST")  resobjdata.type = MYREP_LIST;
+    if(objtypetext.toUpper() == "LINE")  resobjdata.type = MYREP_LINE;
 
     /// валидация строки запроса
     QRegExp rxv("\\b(CREATE|ALTER|DROP|INSERT|UPDATE|DELETE|GRANT|REVOKE|DENY)\\b",
                 Qt::CaseInsensitive);
-    if(rxv.exactMatch(resobjdata.value) ) {error = OBJECTSTRUCTERROR; return MyRepObjectData();}
+    if(rxv.exactMatch(resobjdata.value) ) {error = MYDOC_OBJECTSTRUCTERROR; return MyRepObjectData();}
 
     /// проверка, является значение объекта подстановки запросом
     rxv.setPattern("\\bSELECT\\b");
@@ -329,13 +329,13 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
                                                     QString::SkipEmptyParts);
             }
 
-            if(texttype == "STRING") robject.typevar = STRING;
-            if(texttype == "NUM")    robject.typevar = NUM;
-            if(texttype == "DATE")   robject.typevar = DATE;
-            if(texttype == "ENUM")   robject.typevar = ENUM;
+            if(texttype == "STRING") robject.typevar = MYREP_STRING;
+            if(texttype == "NUM")    robject.typevar = MYREP_NUM;
+            if(texttype == "DATE")   robject.typevar = MYREP_DATE;
+            if(texttype == "ENUM")   robject.typevar = MYREP_ENUM;
         }
         else
-            robject.typevar = FIELD_NULL;                                       /// если есть такое поле, то сдлать текущее не читабельным
+            robject.typevar = MYREP_FIELD_NULL;                                       /// если есть такое поле, то сдлать текущее не читабельным
 
         resultlist.append(robject);
 
@@ -362,7 +362,7 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
     /// разместить в диалоге виджеты в соответсвии с типом данных
     for(itr = resultlist.begin(); itr != resultlist.end(); ++itr)
     {
-        if((*itr ).typevar != FIELD_NULL)                                   /// если объект читабелен
+        if((*itr ).typevar != MYREP_FIELD_NULL)                                   /// если объект читабелен
         {
             QLabel *label = new QLabel(&mydlg);
             label->setText((*itr).namevar);
@@ -371,7 +371,7 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
 
             switch((*itr).typevar)
             {
-            case STRING:{
+            case MYREP_STRING:{
                 QLineEdit *edit = new QLineEdit(&mydlg);
                 QRegExpValidator *validator = new QRegExpValidator(QRegExp(".{0,255}"),edit);
                 layout->addWidget(edit,row,0);
@@ -380,21 +380,21 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
                 ++addwidgets;
                 break;
             }
-            case NUM:{
+            case MYREP_NUM:{
                 QSpinBox *spin = new QSpinBox(&mydlg);
                 layout->addWidget(spin,row,0);
                 (*itr).widget = spin;
                 ++addwidgets;
                 break;
             }
-            case DATE:{
+            case MYREP_DATE:{
                 QDateEdit *dateed = new QDateEdit(&mydlg);
                 layout->addWidget(dateed,row,0);
                 (*itr).widget = dateed;
                 ++addwidgets;
                 break;
             }
-            case ENUM:{
+            case MYREP_ENUM:{
                 QComboBox *combo = new QComboBox(&mydlg);
                 layout->addWidget(combo,row,0);
                 (*itr).widget = combo;
@@ -424,8 +424,8 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
     mydlg.setWindowFlags(Qt::WindowContextHelpButtonHint);
     if(addwidgets > 0)
     {
-        /// действее отменено пользователем (NOERROR - ошибки нету!)
-        if(!mydlg.exec()) {error = NOERROR; return MyRepObjectData();}
+        /// действее отменено пользователем (MYDOC_NOERROR - ошибки нету!)
+        if(!mydlg.exec()) {error = MYDOC_NOERROR; return MyRepObjectData();}
     }
 
     /// обход списка переменных в обратном порядке и их подмена значениями
@@ -434,25 +434,25 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
     {
         --itr;
         QString value="";
-        if((*itr ).typevar != FIELD_NULL)
+        if((*itr ).typevar != MYREP_FIELD_NULL)
         {
             switch ((*itr).typevar) {
-            case STRING:{
+            case MYREP_STRING:{
                 QLineEdit *edit = static_cast<QLineEdit*>((*itr).widget );
                 value = edit->text();
                 break;
             }
-            case NUM:{
+            case MYREP_NUM:{
                 QSpinBox *spin = static_cast<QSpinBox*>((*itr).widget );
                 value = spin->text();
                 break;
             }
-            case DATE:{
+            case MYREP_DATE:{
                 QDateEdit *edit = static_cast<QDateEdit*>((*itr).widget );
                 value = edit->text();
                 break;
             }
-            case ENUM:{
+            case MYREP_ENUM:{
                 QComboBox *box = static_cast<QComboBox*>((*itr).widget );
                 value = box->currentText();
                 break;
@@ -484,7 +484,7 @@ bool MyDocumentODF::readAllZippedFile(QByteArray &data)
     if(!zip.open(QuaZip::mdUnzip ) )
     {
         qDebug() << zip.getZipError();
-        error = ZIPFILEERROR;
+        error = MYDOC_ZIPFILEERROR;
         return false;
     }
 
@@ -498,7 +498,7 @@ bool MyDocumentODF::readAllZippedFile(QByteArray &data)
         {
             zip.close();
             qDebug() << zipfile.errorString();
-            error = ZIPFILEERROR;
+            error = MYDOC_ZIPFILEERROR;
             return false;
         }
         newfile.data = zipfile.readAll();
@@ -516,7 +516,7 @@ bool MyDocumentODF::readAllZippedFile(QByteArray &data)
 
     if(contentfile == 0 || stylesfile == 0)
     {
-        error = ZIPFILEERROR;
+        error = MYDOC_ZIPFILEERROR;
         return false;
     }
     return true;
@@ -526,13 +526,13 @@ bool MyDocumentODF::parsDocContent()
 {
     if(!contentstruct.dom.setContent(contentfile->data) )
     {
-        error = XMLSTRUCTERROR;
+        error = MYDOC_XMLSTRUCTERROR;
         return false;
     }
 
     if(!stylesstruct.dom.setContent(stylesfile->data) )
     {
-        error = XMLSTRUCTERROR;
+        error = MYDOC_XMLSTRUCTERROR;
         return false;
     }
 

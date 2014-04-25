@@ -1,27 +1,28 @@
 #ifndef MYDOCUMENTODF_H
 #define MYDOCUMENTODF_H
 
-#include <QDesktopWidget>
+#include <QDesktopServices>
 #include <QDialogButtonBox>
 #include <QRegExpValidator>
+#include <QDesktopWidget>
 #include <QGridLayout>
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QLineEdit>
 #include <QDateEdit>
-#include <QSpinBox>
 #include <QComboBox>
+#include <QSpinBox>
 #include <QLabel>
 #include <QMovie>
 
-#include <QDebug>
 #include <QDialog>
 #include <QObject>
+#include <QDebug>
 #include <QtXml>
 #include <QtSql>
 
-#include "QuaZIP/quazip.h"
 #include "QuaZIP/quazipfile.h"
+#include "QuaZIP/quazip.h"
 
 /** ****************************************************************************
  * The MyDocumentODF class
@@ -30,14 +31,15 @@
  * позволяет произвести замену элементов документа на заданные
  *
  ******************************************************************************/
-enum MyDocErrors     {NOERROR,                                                  /// без ошибок
-                      ZIPFILEERROR,                                             /// ошибка при чтении архива
-                      XMLSTRUCTERROR,                                           /// ошибка в xml структуре
-                      OBJECTSTRUCTERROR,                                        /// ошибка в структуре описания объекта подставновки
-                      DATANOTFOUND                                              /// данные отсутствуют
+enum MyDocErrors     {MYDOC_NOERROR,                                            /// без ошибок
+                      MYDOC_ZIPFILEERROR,                                       /// ошибка при чтении архива
+                      MYDOC_XMLSTRUCTERROR,                                     /// ошибка в xml структуре
+                      MYDOC_OBJECTSTRUCTERROR,                                  /// ошибка в структуре описания объекта подставновки
+                      MYDOC_DATANOTFOUND                                        /// данные отсутствуют
                      };
-enum MyRepObjectType {NOTYPE, TABLE, LIST, LINE};                               /// тип объекта подстановки
-enum MyRepFieldType  {FIELD_NULL, STRING, NUM, DATE, ENUM};                     /// тип переменных объекта
+enum MyRepObjectType {MYREP_NOTYPE, MYREP_TABLE, MYREP_LIST, MYREP_LINE};                               /// тип объекта подстановки
+enum MyRepFieldType  {MYREP_FIELD_NULL, MYREP_STRING, MYREP_NUM,
+                      MYREP_DATE, MYREP_ENUM};                                  /// тип переменных объекта
 
 
 class MyFileStructure{                                                          /// дом структура для content и styles
@@ -59,8 +61,8 @@ public:
 
 class MyRepObjectData{                                                          /// данные объекта подстановки
 public:
-    MyRepObjectData() {type = NOTYPE; valueisquery = false;}
-    bool isValid(){ return (type != NOTYPE);}
+    MyRepObjectData() {type = MYREP_NOTYPE; valueisquery = false;}
+    bool isValid(){ return (type != MYREP_NOTYPE);}
 
     MyRepObjectType type;                                                       /// тип объекта
     QString         value;                                                      /// значение объекта
@@ -78,7 +80,7 @@ public:
     MyReplaceableField() {
         pos = -1;
         leng = 0;
-        typevar = FIELD_NULL;
+        typevar = MYREP_FIELD_NULL;
         value="";
     }
     int pos;                                                                    /// позиция в строке
@@ -102,7 +104,7 @@ public:
     bool saveDocumentCopy (QString newfile);                                    /// записать копию файла
 
     //QString lastError();
-    bool isError() {return (error != NOERROR);}
+    bool isError() {return (error != MYDOC_NOERROR);}
 
 private:
     bool readAllZippedFile(QByteArray &data);

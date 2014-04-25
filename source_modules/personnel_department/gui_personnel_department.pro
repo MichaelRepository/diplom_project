@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT += core gui sql
+QT += core gui sql xml
 QT += svg
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
@@ -29,7 +29,8 @@ SOURCES += main.cpp\
     MyTable/mytablemodel.cpp \
     myfilterform.cpp \
     MyTable/myfiltermodel.cpp \
-    MyTable/mydelegateforitemfilter.cpp
+    MyTable/mydelegateforitemfilter.cpp \
+    MyReport/mydocumentodf.cpp
 
 HEADERS  += mainwindow.h \
     messdlg.h \
@@ -48,7 +49,8 @@ HEADERS  += mainwindow.h \
     myfilterform.h \
     MyTable/myfilterdata.h \
     MyTable/myfiltermodel.h \
-    MyTable/mydelegateforitemfilter.h
+    MyTable/mydelegateforitemfilter.h \
+    MyReport/mydocumentodf.h
 
 FORMS    += mainwindow.ui \
     messdlg.ui \
@@ -57,6 +59,9 @@ FORMS    += mainwindow.ui \
     dialogeditrecord.ui \
     subtablewidget.ui \
     myfilterform.ui
+
+LIBS += -L"../../quaziplib/" -lquazip
+INCLUDEPATH +=  "../../quaziplib"
 
 RESOURCES += ../../resfile/src.qrc
 

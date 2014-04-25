@@ -32,8 +32,14 @@ public:
     bool initializeTable();
     bool setUpdateDataFields();                                                 /// применить изменение данных в editablerecord
     bool setInsertDataFields();                                                 /// создать новую строку по данным из editablerecord
-/**/bool removeRecord(int row);                                                 /// удалить строку из таблицы
+
+    bool removeRecord(int row);                                                 /// удалить строку из таблицы
+    bool removeRecords(const QList<int> records);
     bool updateData();                                                          /// запросить данные
+
+    bool setUpdateGroupOfRecords(const QList<int> &records);                    /// внести изменения нескольких полей в группу записей (данные беруться из editablerecord)
+    bool setUpdateGroupOfRecords(const QList<int> &records,                     /// внести изменения нескольких полей в группу записей
+                                 const QList<QPair<QString, QString> > &field_value_list);
 
 /// методы display... работают с полями из списка fieldforviewer (необходимы для привязки к модели данных)
     QString  displayFieldAlterName  (int index) const;                          /// получить альтернативное имя поля
@@ -50,6 +56,7 @@ public:
     QVariant getFieldValue(const QString& field);                               /// получить значение поля текущей записи
     bool contains         (const QString& field) const;                         /// проверка наличия поля по имени
 
+    void createFilterForRecords (const QList<int> &records);
     void createQuickFilter(const QString& field, const QString& f_operator,     /// быстрый фильтр для переключения между таблицами по двойному щелчку
                            const QString& value);
     void setFilterActivity(bool activ);                                         /// установить активность фильтра
@@ -57,7 +64,7 @@ public:
     void setCurrentRow (int index);                                             /// установить текущую строку
     int  getCurrentRowIndex() const;                                            /// получить номер текущей строки(записи)
     bool        isFiltered() const;                                             /// проверка активности фильтра
-    QList<int>  searchRecordByField(QString field, QString value);        /// получить номер строки по параметру поля
+    QList<int>  searchRecordByField(QString field, QString value);              /// получить номер строки по параметру поля
     MySqlRecord *getRecord(int row);                                            /// получить запись (row присваевается как текущая строка)
     MySqlRecord *getEmptyRecordForInsert();                                     /// получить пустую строку, которая будет использована для заполнения и вставки в таблицу
     QSqlError   lastSqlError() const;
@@ -68,6 +75,10 @@ public:
     QList<const MyField *> getDisplayedFields() const;
     QList<const MyField *> getDisplayedLinkedTableFields() const;               /// получить список полей всех слинкованных таблиц
     QList<const MyField *> getJoinedFieldsList() const;                         /// получить объединенный список полей - текущий+слинкованный
+
+    QMap<int, QString> getCustomOrdersData() const;                             /// получить список отсортированных полей
+    void setCustomOrderData(int column, QString data);
+    void clearCustomOrdersData();
 
 private:
     int  fieldRealIndexOf(QString field) const;                                 /// получить реальный индекс поля по имени

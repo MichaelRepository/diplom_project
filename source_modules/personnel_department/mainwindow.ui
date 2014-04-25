@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>749</width>
+    <width>752</width>
     <height>506</height>
    </rect>
   </property>
@@ -154,12 +154,12 @@
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/table_.svg</normaloff>:/svg/table_.svg</iconset>
+               <normaloff>:/png/table_.png</normaloff>:/png/table_.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>25</width>
-               <height>25</height>
+               <width>16</width>
+               <height>16</height>
               </size>
              </property>
              <property name="checkable">
@@ -208,12 +208,12 @@
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/table_.svg</normaloff>:/svg/table_.svg</iconset>
+               <normaloff>:/png/table_.png</normaloff>:/png/table_.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>25</width>
-               <height>25</height>
+               <width>16</width>
+               <height>16</height>
               </size>
              </property>
              <property name="checkable">
@@ -252,12 +252,12 @@
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/table_.svg</normaloff>:/svg/table_.svg</iconset>
+               <normaloff>:/png/table_.png</normaloff>:/png/table_.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>25</width>
-               <height>25</height>
+               <width>16</width>
+               <height>16</height>
               </size>
              </property>
              <property name="checkable">
@@ -322,7 +322,169 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="page_2"/>
+      <widget class="QWidget" name="page_2">
+       <layout class="QGridLayout" name="gridLayout_6">
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <property name="spacing">
+         <number>5</number>
+        </property>
+        <item row="0" column="0">
+         <widget class="QTableView" name="reportsTableView">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="showDropIndicator" stdset="0">
+           <bool>false</bool>
+          </property>
+          <property name="dragDropOverwriteMode">
+           <bool>false</bool>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="cornerButtonEnabled">
+           <bool>false</bool>
+          </property>
+          <attribute name="horizontalHeaderHighlightSections">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderHighlightSections">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QFrame" name="frame">
+          <property name="maximumSize">
+           <size>
+            <width>151</width>
+            <height>16777215</height>
+           </size>
+          </property>
+          <property name="styleSheet">
+           <string notr="true">QWidget, QFrame{ background-color: #3C3C3C;}</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_5">
+           <item row="3" column="0">
+            <widget class="Line" name="line">
+             <property name="maximumSize">
+              <size>
+               <width>128</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true"/>
+             </property>
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QPlainTextEdit" name="RepInfo">
+             <property name="maximumSize">
+              <size>
+               <width>128</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QPlainTextEdit{border:none; color:#fff}</string>
+             </property>
+             <property name="verticalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOff</enum>
+             </property>
+             <property name="horizontalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOff</enum>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="plainText">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLineEdit" name="RepName">
+             <property name="maximumSize">
+              <size>
+               <width>128</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">QLineEdit{border:none;
+color:#fff};</string>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="0">
+            <widget class="QLabel" name="thumbLabel">
+             <property name="minimumSize">
+              <size>
+               <width>128</width>
+               <height>128</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>128</width>
+               <height>128</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
     <item row="0" column="0">
@@ -411,7 +573,9 @@ QTabBar::tab:selected {
 	background-color:#fff;
 	border:1 solid #898C95;*/
 	border-bottom:3 solid #4586D8;
-	color:#4586D8;
+	color:#FFF;
+	font-size:13px;
+	
 }</string>
          </property>
          <property name="currentIndex">
@@ -456,12 +620,12 @@ QTabBar::tab:selected {
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/table_row_ed.svg</normaloff>:/svg/table_row_ed.svg</iconset>
+               <normaloff>:/png/table_row_ed.png</normaloff>:/png/table_row_ed.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -494,12 +658,12 @@ QTabBar::tab:selected {
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/table_row_add.svg</normaloff>:/svg/table_row_add.svg</iconset>
+               <normaloff>:/png/table_row_ad.png</normaloff>:/png/table_row_ad.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -532,12 +696,12 @@ QTabBar::tab:selected {
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/table_row_rem.svg</normaloff>:/svg/table_row_rem.svg</iconset>
+               <normaloff>:/png/table_row_re.png</normaloff>:/png/table_row_re.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -573,129 +737,12 @@ QTabBar::tab:selected {
              </property>
              <property name="icon">
               <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/refresh-icon.svg</normaloff>:/svg/refresh-icon.svg</iconset>
+               <normaloff>:/png/refresh.png</normaloff>:/png/refresh.png</iconset>
              </property>
              <property name="iconSize">
               <size>
-               <width>25</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonIconOnly</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-             <property name="arrowType">
-              <enum>Qt::NoArrow</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="To_group_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Перевод 
-в группу</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/user_to_group-icon.svg</normaloff>:/svg/user_to_group-icon.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>30</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonIconOnly</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-             <property name="arrowType">
-              <enum>Qt::NoArrow</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="Change_state_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Изменить
-состояние</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/user_to_state-icon.svg</normaloff>:/svg/user_to_state-icon.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>30</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonIconOnly</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-             <property name="arrowType">
-              <enum>Qt::NoArrow</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="Change_course_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Перевод
-на курс</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/direction-icon.svg</normaloff>:/svg/direction-icon.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -768,8 +815,8 @@ QTabBar::tab:selected {
              </property>
              <property name="iconSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -806,8 +853,8 @@ QTabBar::tab:selected {
              </property>
              <property name="iconSize">
               <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -845,86 +892,8 @@ QTabBar::tab:selected {
              </property>
              <property name="iconSize">
               <size>
-               <width>30</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonIconOnly</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-             <property name="arrowType">
-              <enum>Qt::NoArrow</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="Filter_attribute_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Фильтр по
-значению</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/user_to_state-icon.svg</normaloff>:/svg/user_to_state-icon.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>30</width>
-               <height>30</height>
-              </size>
-             </property>
-             <property name="autoExclusive">
-              <bool>false</bool>
-             </property>
-             <property name="popupMode">
-              <enum>QToolButton::DelayedPopup</enum>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonIconOnly</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-             <property name="arrowType">
-              <enum>Qt::NoArrow</enum>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QToolButton" name="Filter_group_attribute_button">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>По группе
-значений</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/user_to_state-icon.svg</normaloff>:/svg/user_to_state-icon.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>30</width>
-               <height>30</height>
+               <width>32</width>
+               <height>32</height>
               </size>
              </property>
              <property name="autoExclusive">
@@ -963,6 +932,115 @@ QTabBar::tab:selected {
           <attribute name="title">
            <string>Отчёты</string>
           </attribute>
+          <layout class="QGridLayout" name="gridLayout_7">
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="topMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
+           <property name="bottomMargin">
+            <number>0</number>
+           </property>
+           <property name="spacing">
+            <number>5</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QToolButton" name="Create_Report_bt1">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Изменить</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../../resfile/src.qrc">
+               <normaloff>:/svg/document.svg</normaloff>:/svg/document.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="autoExclusive">
+              <bool>false</bool>
+             </property>
+             <property name="popupMode">
+              <enum>QToolButton::DelayedPopup</enum>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonIconOnly</enum>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+             <property name="arrowType">
+              <enum>Qt::NoArrow</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QToolButton" name="Refresh_button2">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Обновить</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../../resfile/src.qrc">
+               <normaloff>:/png/refresh.png</normaloff>:/png/refresh.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="autoExclusive">
+              <bool>false</bool>
+             </property>
+             <property name="popupMode">
+              <enum>QToolButton::DelayedPopup</enum>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonIconOnly</enum>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+             <property name="arrowType">
+              <enum>Qt::NoArrow</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <spacer name="horizontalSpacer_4">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>642</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
          </widget>
         </widget>
        </item>
@@ -995,14 +1073,9 @@ QTabBar::tab:selected {
   <tabstop>Delete_button1</tabstop>
   <tabstop>tabWidget</tabstop>
   <tabstop>Refresh_button1</tabstop>
-  <tabstop>To_group_button</tabstop>
-  <tabstop>Change_state_button</tabstop>
-  <tabstop>Change_course_button</tabstop>
   <tabstop>Master_filter_button</tabstop>
   <tabstop>Filter_selected_button</tabstop>
   <tabstop>Filter_unselected_button</tabstop>
-  <tabstop>Filter_attribute_button</tabstop>
-  <tabstop>Filter_group_attribute_button</tabstop>
  </tabstops>
  <resources>
   <include location="../../resfile/src.qrc"/>

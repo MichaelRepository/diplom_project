@@ -4,6 +4,7 @@
 #include <QWidget>
 #include <QStatusBar>
 #include <QLayout>
+#include <QPushButton>
 
 #include <MyTable/mytable.h>
 #include <MyTable/myfiltermodel.h>
@@ -22,13 +23,17 @@ public:
 
     void setTable(MyTable* table);
 
+signals:
+    void filterready();
+
 private slots:
     void on_addBt_clicked();
     void on_addConditionBt_clicked();
     void on_remBt_clicked();
     void on_clearBt_clicked();
+    void on_buttonBox_rejected();
 
-    void resizeViewColumn(int col, int oldsize, int newsize);
+    void on_ExpandBt_clicked();
 
 private:
     Ui::MyFilterForm *ui;

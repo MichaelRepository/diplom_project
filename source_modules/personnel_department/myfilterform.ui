@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>465</width>
-    <height>230</height>
+    <width>541</width>
+    <height>221</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -53,15 +53,22 @@
  QTreeView::branch:has-children:!has-siblings:closed,
  QTreeView::branch:closed:has-children:has-siblings {
          border-image: none;	
-	image: url(:/for_tree/stylesheet-branch-closed.svg);
+	 	image: url(:/for_tree/stylesheet-branch-closed.png);
 
  }
 
  QTreeView::branch:open:has-children:!has-siblings,
  QTreeView::branch:open:has-children:has-siblings  {
-         border-image: none;         
-	image: url(:/for_tree/stylesheet-branch-open.svg);
+         border-image: none;        
+		
+	image: url(:/for_tree/stylesheet-branch-open.png);
  }</string>
+     </property>
+     <property name="frameShape">
+      <enum>QFrame::NoFrame</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Sunken</enum>
      </property>
      <property name="editTriggers">
       <set>QAbstractItemView::CurrentChanged|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed|QAbstractItemView::SelectedClicked</set>
@@ -89,6 +96,12 @@
    </item>
    <item row="0" column="0">
     <widget class="QFrame" name="frame">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="minimumSize">
       <size>
        <width>0</width>
@@ -123,7 +136,7 @@
       <property name="spacing">
        <number>2</number>
       </property>
-      <item row="0" column="4">
+      <item row="0" column="5">
        <widget class="QToolButton" name="clearBt">
         <property name="minimumSize">
          <size>
@@ -146,6 +159,19 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="4">
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
       <item row="0" column="0">
        <widget class="QToolButton" name="addBt">
         <property name="minimumSize">
@@ -160,6 +186,29 @@
         <property name="icon">
          <iconset resource="../../resfile/src.qrc">
           <normaloff>:/svg/add_filter_group_icon.svg</normaloff>:/svg/add_filter_group_icon.svg</iconset>
+        </property>
+        <property name="iconSize">
+         <size>
+          <width>20</width>
+          <height>20</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QToolButton" name="addConditionBt">
+        <property name="minimumSize">
+         <size>
+          <width>25</width>
+          <height>25</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+        <property name="icon">
+         <iconset resource="../../resfile/src.qrc">
+          <normaloff>:/svg/add_filter-icon.svg</normaloff>:/svg/add_filter-icon.svg</iconset>
         </property>
         <property name="iconSize">
          <size>
@@ -193,32 +242,13 @@
        </widget>
       </item>
       <item row="0" column="3">
-       <spacer name="horizontalSpacer">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>40</width>
-          <height>20</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="0" column="1">
-       <widget class="QToolButton" name="addConditionBt">
-        <property name="minimumSize">
-         <size>
-          <width>25</width>
-          <height>25</height>
-         </size>
-        </property>
+       <widget class="QToolButton" name="ExpandBt">
         <property name="text">
          <string/>
         </property>
         <property name="icon">
          <iconset resource="../../resfile/src.qrc">
-          <normaloff>:/svg/add_filter-icon.svg</normaloff>:/svg/add_filter-icon.svg</iconset>
+          <normaloff>:/svg/expand_all.svg</normaloff>:/svg/expand_all.svg</iconset>
         </property>
         <property name="iconSize">
          <size>

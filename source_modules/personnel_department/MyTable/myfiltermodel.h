@@ -31,13 +31,16 @@ public:
     void addConditionsGroup(const QModelIndex &selectedindex);
     void addCondition      (const QModelIndex &selectedindex);
     void removeChildItem   (const QModelIndex &removableindex);
-    void filterClear();
 
     bool setHeaderData(int section, Qt::Orientation orientation,
                        const QVariant &value, int role);
     bool insertRow(int row, const QModelIndex &parent);
     bool removeRow(int row, const QModelIndex &parent);
     void clearFilter();
+
+
+private slots:
+    void filtermodified();
 
 private:
     int fieldIndexOf(QString table, QString field) const;

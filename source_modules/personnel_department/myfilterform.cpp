@@ -7,8 +7,18 @@ MyFilterForm::MyFilterForm(QWidget *parent) :
     ui->setupUi(this);
     tabledata = 0;
     ui->treeView->setItemDelegate(&filterdelegate);
-    connect(ui->treeView->header(), &QHeaderView::sectionResized,
-            this,                   &MyFilterForm::resizeViewColumn);
+    QPushButton* bt1 = ui->buttonBox->button(QDialogButtonBox::Ok);
+    QPushButton* bt2 = ui->buttonBox->button(QDialogButtonBox::Cancel);
+    bt1->setText("Применить");
+    bt2->setText("Отмена");
+    connect(bt1,  &QPushButton ::clicked,
+            this, &MyFilterForm::filterready);
+
+    ui->addBt->setToolTip           ("Создать группу условий фильтрации");
+    ui->addConditionBt->setToolTip  ("Создать условие фильтрации");
+    ui->remBt->setToolTip           ("Удалить узел фильтра");
+    ui->clearBt->setToolTip         ("Сбросить фильтр");
+
 }
 
 MyFilterForm::~MyFilterForm()
@@ -18,7 +28,6 @@ MyFilterForm::~MyFilterForm()
 
 void MyFilterForm::setTable(MyTable *table)
 {
-
     tabledata = table;
     tablefilterroot = table->getFilterRoot();
     filtermodel.setFilterData(tablefilterroot, table->getJoinedFieldsList());
@@ -28,9 +37,9 @@ void MyFilterForm::setTable(MyTable *table)
     ui->treeView->header()->setVisible(true);
     ui->treeView->header()->setSectionsClickable(false);
 
-    ui->treeView->header()->setMinimumSectionSize(170);
+    ui->treeView->header()->setMinimumSectionSize(100);
     ui->treeView->header()->resizeSection(1,170);
-    ui->treeView->header()->resizeSection(2,117);
+    ui->treeView->header()->resizeSection(2,90);
     ui->treeView->expandAll();
 }
 
@@ -69,13 +78,15 @@ void MyFilterForm::on_clearBt_clicked()
 {
     filtermodel.clearFilter();
     ui->treeView->expandAll();
-    ui->treeView->resizeColumnToContents(0);
+    ui->treeView->repaint();
 }
 
-void MyFilterForm::resizeViewColumn(int col, int oldsize, int newsize)
+void MyFilterForm::on_buttonBox_rejected()
 {
-    /*if(col == 0 && (newsize-oldsize) != 30){
-        ui->treeView->setColumnWidth(0, newsize+30);
-    }*/
+    close();
 }
 
+void MyFilterForm::on_ExpandBt_clicked()
+{
+    ui->treeView->expandAll();
+}

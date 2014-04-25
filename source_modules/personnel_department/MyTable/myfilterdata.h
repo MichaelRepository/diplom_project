@@ -1,19 +1,22 @@
 #ifndef MYFILTERDATA_H
 #define MYFILTERDATA_H
 
+#include <QObject>
 #include "mysqlfield.h"
 
-class MyFilterNode
+class MyFilterNode: public QObject
 {
+    Q_OBJECT
 public:
-    MyFilterNode(MyFilterNode* nodeparent = 0, QString binder = "AND")
+    MyFilterNode(MyFilterNode* nodeparent = 0, QString binder = "AND",
+                 QObject* objparent = 0): QObject(objparent)
     {
         parent   = nodeparent;
         f_binder = binder;
     }
-    MyFilterNode(MyFilterNode* nodeparent,
-                 QString table, QString field,
-                 QString foperator = "=", QString value = "NULL")
+    MyFilterNode(MyFilterNode* nodeparent,QString table, QString field,
+                 QString foperator = "=", QString value = "NULL",
+                 QObject* objparent = 0): QObject(objparent)
     {
         parent      = nodeparent;
         f_table     = table;
@@ -41,6 +44,7 @@ public:
     }
 
     void clear(){
+        emit modified();
         if(!childs.isEmpty())
         {
             qDeleteAll(childs);
@@ -58,24 +62,33 @@ public:
     QList<MyFilterNode*> childrens() const {return childs;}
 
     void  insertChildNode(int index, MyFilterNode* node){
+        emit modified();
         node->parent = this;
         childs.insert(index, node);
     }
 
     void addChild(MyFilterNode* node){
+        emit modified();
+        connect(node, &MyFilterNode::modified,
+                this, &MyFilterNode::modified);
         node->parent = this;
         childs.append(node);
     }
 
     MyFilterNode* takeChild(int index)
     {
+        emit modified();
         MyFilterNode* item = childs.takeAt(index);
+        disconnect(item, &MyFilterNode::modified,
+                   this, &MyFilterNode::modified);
         Q_ASSERT(item);
         item->parent = 0;
         return item;
     }
 
     QString filterConditionText() const { return nodeToFilterConditionText(this); }
+signals:
+    void modified();                                                            /// сообщвет об изменениях
 
 private:
 
@@ -102,8 +115,8 @@ private:
             }
             else
             {
-                result +=  " "+child->binder()+" "+
-                           " ( "+nodeToFilterConditionText(child)+") ";
+                if(node->indexOf(child) > 0) result +=  " "+child->binder()+" ";
+                result += " ( "+nodeToFilterConditionText(child)+") ";
             }
         }
         return result;
@@ -162,13 +175,55 @@ public:
                 result += " AND ("+filtertext+") ";
         }
 
-        if(orderitems.size() > 0)
+        if(customOrder.size() > 0)
+        {
+            result += " ORDER BY ";
+            QMap<int, QString>::const_iterator itr;
+            for(itr = customOrder.begin(); itr != customOrder.end(); ++itr)
+            {
+                if(itr != customOrder.begin() ) result += ", ";
+                if(itr.value() == "ASC" || itr.value() == "DESC")
+                    result += " "+QString::number(itr.key() )+" "+itr.value();
+            }
+        }
+        else if(orderitems.size() > 0)
             result += " ORDER BY " + orderitems.join(',');
 
         //qDebug() << result <<" << ";
 
         return result;
     }
+
+    QString getOrderItem(int index) const
+    {
+        if(index < 0 || index >= orderitems.size() ) return QString();
+        return orderitems[index];
+    }
+
+    QMap<int, QString> getCustomOrdersData() const
+    {
+        QMap<int, QString> result;
+        QMap<int, QString>::const_iterator itr;
+        for(itr = customOrder.begin(); itr != customOrder.end(); ++itr)
+        {
+            if(itr.value() == "ASC" || itr.value() == "DESC")
+                result.insert(itr.key(), itr.value() );
+        }
+        return result;
+    }
+
+    void setCustomOrderData(int column, QString data)
+    {
+        if(customOrder.contains(column) ) customOrder[column] = data;
+        else customOrder.insert(column, data);
+    }
+
+    void clearCustomOrdersData()
+    {
+        customOrder.clear();
+    }
+
+    bool customOrderIsEmpty() const {return customOrder.isEmpty(); }
 
 private:
 
@@ -196,9 +251,12 @@ private:
 
     QStringList   selectitems;
     QStringList   fromitems;
-    QStringList   orderitems;
+    QStringList   orderitems;                                                   /// порядок устанавливаемый при стандартном запросе
     MyFilterNode* rootofwhere;
     MyFilterNode* filterroot;
+
+    QMap<int, QString> customOrder;                                             /// порядок столбцов установленный пользователем
+
 };
 
 

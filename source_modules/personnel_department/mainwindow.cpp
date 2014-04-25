@@ -12,27 +12,19 @@ MainWindow::MainWindow(QWidget *parent) :
     globaltable    = 0;
     globalsubtable = 0;
 
-    /// подсказки
-    ui->Edit_button1->                  setToolTip("Обновить данные записи");
-    ui->Add_button1->                   setToolTip("Добавить новую запись в таблицу");
-    ui->Delete_button1->                setToolTip("Удалить выделенные записи из таблицы");
-    ui->Refresh_button1->               setToolTip("Обновить (перезапросить) данные в таблице");
-    ui->To_group_button->               setToolTip("Перевод выбранных студентов в группу");
-    ui->Change_state_button->           setToolTip("Установить новое состояние для выбранных студентов");
-    ui->Change_course_button->          setToolTip("Установить курс для выделенных групп");
-    ui->Master_filter_button->          setToolTip("Вызвать диалог для построения фильтра");
-    ui->Filter_selected_button->        setToolTip("Отобрать выделенные записи");
-    ui->Filter_unselected_button->      setToolTip("Отобрать невыделенные записи");
-    ui->Filter_attribute_button->       setToolTip("Установить фильтр по значению атрибута");
-    ui->Filter_group_attribute_button-> setToolTip("Установить фильтр по группе атрибутов");
-    ui->Filter_checked_button->         setToolTip("Вклюить/выключить фильтрацию записей");
-    ui->Switch_table_spec_button->      setToolTip("Переключиться на таблицу [Специальности]");
-    ui->Switch_table_group_button->     setToolTip("Переключиться на таблицу [Группы]");
-    ui->Switch_table_stud_button->      setToolTip("Переключиться на таблицу [Студенты]");
+    /// убрать знак вопроса в окне авторизации
+    Qt::WindowFlags authdlgflags = authorizedlg.windowFlags();
+    authdlgflags = authdlgflags &(~Qt::WindowContextHelpButtonHint);
+    authorizedlg.setWindowFlags(authdlgflags);
 
     /// окно фильтра
     tablefilter = new MyFilterForm(this);
-    tablefilter->setWindowFlags(Qt::Dialog);
+    Qt::WindowFlags flags = Qt::Window;
+    flags = flags | Qt::WindowCloseButtonHint ;
+    tablefilter->setWindowFlags(flags);
+
+    connect(tablefilter, &MyFilterForm::filterready,
+            this,        &MainWindow::setGlobalTableFiltered);
 
     /// создание окна для отображения подтаблиц
     subtablewidget = new SubTableWidget(this);                                  /// установка флага - "контекстное меню", для диалога субтаблиц
@@ -91,17 +83,60 @@ MainWindow::MainWindow(QWidget *parent) :
     header = new QSpreadsheetHeaderView(Qt::Horizontal, this);                  /// установка собственного заголовка для столбцов
     header->setHighlightSections(true);
 
+    connect(header, &QSpreadsheetHeaderView::sortUp,
+            this,   &MainWindow::sortUP);
+    connect(header, &QSpreadsheetHeaderView::sortDown,
+            this,   &MainWindow::sortDown);
+    connect(header, &QSpreadsheetHeaderView::orderClear,
+            this,   &MainWindow::clearOrders);
+
     /// создание контекстного меню таблицы
-    Table_record_edit   = new QAction(QIcon(":/svg/edit-icon.svg"), "Изменить запись", this);
-    Table_record_add    = new QAction(QIcon(":/svg/plus-icon.svg"), "Добавить запись", this);
-    Table_record_remove = new QAction(QIcon(":/svg/minus-icon.svg"),"Удалить записи",  this);
+    Table_refresh       = new QAction(QIcon(":/svg/refresh-icon.svg"),      "Обновить данные",     this);
+    Table_record_edit   = new QAction(QIcon(":/svg/edit-icon.svg"),         "Изменить запись",     this);
+    Table_record_add    = new QAction(QIcon(":/svg/plus-icon.svg"),         "Добавить запись",     this);
+    Table_record_remove = new QAction(QIcon(":/svg/minus-icon.svg"),        "Удалить записи",      this);
+    Table_set_filtered  = new QAction(QIcon(":/svg/filter-icon.svg"),       "Активировать фильтр", this);
+    Table_master_filter = new QAction(QIcon(":/svg/master_filter-icon.svg"),"Мастер фильтр",       this);
+
+    connect(Table_refresh,       &QAction   ::triggered,
+            this,                &MainWindow::on_Refresh_button1_clicked);
+    connect(Table_record_edit,   &QAction   ::triggered,
+            this,                &MainWindow::on_Edit_button1_clicked);
+    connect(Table_record_add ,   &QAction   ::triggered,
+            this,                &MainWindow::on_Add_button1_clicked);
+    connect(Table_record_remove, &QAction   ::triggered,
+            this,                &MainWindow::on_Delete_button1_clicked);
+    connect(Table_set_filtered,  &QAction   ::triggered,
+            this,                &MainWindow::on_Filter_checked_button_clicked);
+    connect(Table_master_filter, &QAction   ::triggered,
+            this,                &MainWindow::on_Master_filter_button_clicked);
+
+    ui->tableView->addAction(Table_refresh);
     ui->tableView->addAction(Table_record_edit);
     ui->tableView->addAction(Table_record_add);
     ui->tableView->addAction(Table_record_remove);
+    ui->tableView->addAction(Table_master_filter);
+    ui->tableView->addAction(Table_set_filtered);
     ui->tableView->setContextMenuPolicy(Qt::ActionsContextMenu);                /// установка типа меню - отображать список действий
 
     /// создание загрузчика параметров приложения
     setting = new QSettings("../myapp.ini",QSettings::IniFormat,this);
+
+    /// подсказки
+    ui->Edit_button1->                  setToolTip("Обновить данные записи");
+    ui->Add_button1->                   setToolTip("Добавить новую запись в таблицу");
+    ui->Delete_button1->                setToolTip("Удалить выделенные записи из таблицы");
+    ui->Refresh_button1->               setToolTip("Обновить (перезапросить) данные в таблице");
+    ui->Master_filter_button->          setToolTip("Вызвать диалог для построения фильтра");
+    ui->Filter_selected_button->        setToolTip("Отобрать выделенные записи");
+    ui->Filter_unselected_button->      setToolTip("Отобрать невыделенные записи");
+    ui->Filter_checked_button->         setToolTip("Включить/выключить фильтрацию записей");
+    ui->Switch_table_spec_button->      setToolTip("Переключиться на таблицу [Специальности]");
+    ui->Switch_table_group_button->     setToolTip("Переключиться на таблицу [Группы]");
+    ui->Switch_table_stud_button->      setToolTip("Переключиться на таблицу [Студенты]");
+    Status_search_bt->                  setToolTip("Выбрать поле для поиска");
+    ui->Create_Report_bt1->             setToolTip("Создать отчет");
+    ui->Refresh_button2->               setToolTip("Обновить таблицу шаблонов");
 }
 
 MainWindow::~MainWindow()
@@ -237,6 +272,9 @@ void MainWindow::initTables()
 
 /// ВАЖНО - установка глобальной таблицы
     dlgrecordedit   = new DialogEditRecord(connectionname, this);
+    Qt::WindowFlags flags = dlgrecordedit->windowFlags();
+    flags = flags & (~Qt::WindowContextHelpButtonHint);
+    dlgrecordedit->setWindowFlags(flags);
     tablemodel      = new MyTableModel(this);
     subtablemodel   = new MyTableModel(this);
     globaltable     = specialitytable;
@@ -321,7 +359,11 @@ void MainWindow::init_sys()
     if(userid == -1) exit(0);
 
     initTables();                                                               /// ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ
-    set_current_table(SPECIALITY, BUTTONMODE);                                  /// установить текущую таблицу
+    set_current_table(SPECIALITY);                                              /// установить текущую таблицу
+
+    /// получение щаблонов отчетов
+    reportstablemodel = new QSqlTableModel(this);                               /// модель данных для оторажения таблицы шаблонов
+    getReportTemplatesTable();
 
     splashwindow->finish(this);
     this->show();
@@ -338,46 +380,41 @@ void MainWindow::refresh_menu()
     switch (currenttable){
     case SPECIALITY:
         ui->Switch_table_spec_button->setChecked(true);
-        ui->To_group_button->setEnabled(false);
-        ui->Change_state_button->setEnabled(false);
-        ui->Change_course_button->setEnabled(false);
         Status_label_curtable->setText("Таблица: Специальность ");
         Status_search_bt->setMenu(search_menu_for_spec);
         break;
     case GROUP:
         ui->Switch_table_group_button->setChecked(true);
-        ui->To_group_button->setEnabled(false);
-        ui->Change_state_button->setEnabled(false);
-        ui->Change_course_button->setEnabled(true);
         Status_label_curtable->setText("Таблица: Группа ");
         Status_search_bt->setMenu(search_menu_for_group);
         break;
     case STUDENT:
         ui->Switch_table_stud_button->setChecked(true);
-        ui->To_group_button->setEnabled(true);
-        ui->Change_state_button->setEnabled(true);
-        ui->Change_course_button->setEnabled(false);
         Status_label_curtable->setText("Таблица: Студент ");
         Status_search_bt->setMenu(search_menu_for_stud);
         break;
     }
     /// определить число выделенных записей активной таблицы
     int countselectedrows = ui->tableView->selectionModel()->selectedRows().size();
-    bool state = (countselectedrows == 1);
-    ///УСТАНОВИТЬ ТЕКУЩУЮ СТРОКУ В ГЛОБАЛЬНОЙ ТАБЛИЦЕ
-    if(state) globaltable->setCurrentRow(ui->tableView->selectionModel()->selectedRows().first().row());
+    if(countselectedrows == 1) globaltable->setCurrentRow(ui->tableView->selectionModel()->selectedRows().first().row());
     /// переключить состояние кнопок и элементов контекстного меню, зависимых от числа выделенных записей
-    ui->Edit_button1->setEnabled(state);
-    Table_record_edit->setEnabled(state);
+    ui->Edit_button1->    setEnabled(countselectedrows > 0);
+    ui->Delete_button1->  setEnabled(countselectedrows > 0);
+    Table_record_edit->   setEnabled(countselectedrows > 0);
+    Table_record_remove-> setEnabled(countselectedrows > 0);
     /// обновить надписи в статус баре
     Status_label_count_rows->setText    (" Число записей: "+ QString::number(globaltable->getRecordsCount())+" ");
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
     Status_label_count_selected->setText("Выделено строк: "+ QString::number(countselectedrows));
 
     ui->Filter_checked_button->setChecked(globaltable->isFiltered());
+    if(globaltable->isFiltered())
+        Table_set_filtered->setText("Деактивировать фильтр");
+    else
+        Table_set_filtered->setText("Активировать фильтр");
 }
 
-void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
+void MainWindow::set_current_table(Tables table)
 {
     /// формирование запросов, относительно текущей таблицы
     switch(table){
@@ -408,7 +445,10 @@ void MainWindow::set_current_table(Tables table, ModeSwitchingTable mode)
                       this,                            &MainWindow::tableView_items_selected,
                       Qt::UniqueConnection);
 
+    tablefilter->setTable(globaltable);
+
     globalsubtable = 0;
+    refresh_table(globaltable);
     refresh_menu();
 }
 
@@ -440,22 +480,22 @@ void MainWindow::on_tableView_doubleClicked(const QModelIndex &index)
         break;
     }
     }
-    set_current_table(nexttable, MOUSEMODE);                                    /// переключение таблиц
+    set_current_table(nexttable);                                               /// переключение таблиц
 }
 
 void MainWindow::on_Switch_table_spec_button_clicked()
 {
-    set_current_table(SPECIALITY, BUTTONMODE);
+    set_current_table(SPECIALITY);
 }
 
 void MainWindow::on_Switch_table_group_button_clicked()
 {
-    set_current_table(GROUP, BUTTONMODE);
+    set_current_table(GROUP);
 }
 
 void MainWindow::on_Switch_table_stud_button_clicked()
 {
-    set_current_table(STUDENT, BUTTONMODE);
+    set_current_table(STUDENT);
 }
 
 void MainWindow::on_tableView_clicked(const QModelIndex &index)
@@ -525,6 +565,16 @@ void MainWindow::add_new_record(MyTable *table)                                 
     dlgrecordedit->setRecord(table->getEmptyRecordForInsert() );
     if(dlgrecordedit->exec() == 1)
     {
+        QMessageBox mess;
+        mess.setWindowTitle("Подтвердить действие.");
+        mess.setIcon(QMessageBox::Warning);
+        mess.setText("Желаете применить изменения?");
+        mess.addButton(QMessageBox::Cancel);
+        mess.addButton(QMessageBox::Ok);
+        mess.setButtonText(QMessageBox::Ok, "Применить");
+        mess.setButtonText(QMessageBox::Cancel,"Отмена");
+        if(mess.exec() == QMessageBox::Cancel ) return ;
+
         if(!table->setInsertDataFields())
         {
             QMessageBox messbox;
@@ -541,33 +591,94 @@ void MainWindow::add_new_record(MyTable *table)                                 
 
 void MainWindow::remove_records(MyTable *table)                                 /// удалить записи
 {
-    if(!table->removeRecord(table->getCurrentRowIndex() ))
+    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
+    if(items.size() <= 0) return ;
+    QList<int> rows;
+    QModelIndexList::const_iterator itri;
+    for(itri = items.begin(); itri != items.end(); ++itri) rows << (*itri).row();
+
+    QMessageBox mess;
+    mess.setIcon(QMessageBox::Warning);
+    mess.setWindowTitle("Подтвердить удаление.");
+    mess.setText("Желаете удалить выбранные записи?\n"
+                 "Число удаляемых записей(строк): "+
+                 QString::number(rows.size() ) );
+    mess.addButton(QMessageBox::Ok);
+    mess.addButton(QMessageBox::Cancel);
+    mess.setButtonText(QMessageBox::Cancel,"Отмена");
+    mess.setButtonText(QMessageBox::Ok, "Удалить");
+    if(mess.exec() == QMessageBox::Cancel ) return ;
+
+    if(!table->removeRecords(rows) )
     {
         QMessageBox messbox;
         messbox.setWindowTitle("Ошибка");
-        messbox.setText("Невозможно удалить запись.");
+        messbox.setText("Невозможно удалить записи");
         messbox.setIcon(QMessageBox::Critical);
         messbox.addButton(QMessageBox::Ok);
         messbox.setButtonText(QMessageBox::Ok, "Ясно");
         messbox.exec();
+
+        if(table->lastSqlError().isValid())
+        {
+            dbmessdlg.showdbmess(table->lastSqlError());
+        }
     }
     refresh_table(table);
 }
 
 void MainWindow::edit_records(MyTable *table)                                   /// изменить записи
 {
-    dlgrecordedit->setRecord(table->getRecord(table->getCurrentRowIndex() ) );
+    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
+    QList<int> rows;
+    /// два режима редактирования!
+    /// 1. редактирование одной записи
+    /// 2. редактирование группы записей
+    if(items.size() > 1)
+    {
+        QModelIndexList::const_iterator itri;
+        for(itri = items.begin(); itri != items.end(); ++itri)
+            rows << (*itri).row();
+        dlgrecordedit->setRecord(table->getEmptyRecordForInsert() );
+    }
+    else
+        dlgrecordedit->setRecord(table->getRecord(table->getCurrentRowIndex() ) );
+
     if(dlgrecordedit->exec() == 1)
     {
-        if(!table->setUpdateDataFields())
+        QMessageBox mess;
+        mess.setWindowTitle("Применить изменения");
+        mess.setIcon(QMessageBox::Warning);
+        mess.setText("Желаете применить изменения?\n"
+                     "Количество изменяемых записей(строк):"+
+                     QString::number(items.size() ) );
+        mess.addButton(QMessageBox::Ok);
+        mess.addButton(QMessageBox::Cancel);
+        mess.setButtonText(QMessageBox::Ok, "Применить");
+        mess.setButtonText(QMessageBox::Cancel,"Отмена");
+        if(mess.exec() == QMessageBox::Cancel ) return  ;
+
+        bool result;
+        if(items.size() > 1)
+            result = table->setUpdateGroupOfRecords(rows);
+        else
+            result = table->setUpdateDataFields();
+
+        if(!result)
         {
             QMessageBox messbox;
             messbox.setWindowTitle("Ошибка");
-            messbox.setText("Невозможно обновить запись.");
+            messbox.setText("Невозможно обновить записи.");
             messbox.setIcon(QMessageBox::Critical);
             messbox.addButton(QMessageBox::Ok);
             messbox.setButtonText(QMessageBox::Ok, "Ясно");
             messbox.exec();
+
+            if(table->lastSqlError().isValid())
+            {
+                dbmessdlg.showdbmess(table->lastSqlError());
+            }
+
         }
         refresh_table(table);
     }
@@ -586,12 +697,189 @@ bool MainWindow::refresh_table(MyTable *table)
         messbox.addButton(QMessageBox::Ok);
         messbox.setButtonText(QMessageBox::Ok, "Ясно");
         messbox.exec();
+
+        if(table->lastSqlError().isValid())
+        {
+            dbmessdlg.showdbmess(table->lastSqlError());
+        }
     }
+
+    ui->tableView->clearSelection();
     tablemodel   ->refresh();
     subtablemodel->refresh();
     ui->tableView->resizeColumnsToContents();
     ui->tableView->resizeRowsToContents();
+
+    header->setCustomOrderData(globaltable->getCustomOrdersData() );
+
     return res;
+}
+
+void MainWindow::getReportTemplatesTable()
+{
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    if(!db.isOpen())
+    {
+        dbMessDlg dbmess;
+        dbmess.showdbmess(db.lastError());
+    }
+    QSqlQuery query(db);
+    query.prepare("SELECT reports.idreport, reports.repname, reports.repinfo "
+                  "FROM reports, usersgroup "
+                  "WHERE usersgroup.idgroup = reports.usergroup AND "
+                  "usersgroup.idgroup = ?");
+    query.bindValue(0, userid);
+
+    if(!query.exec() )
+    {
+        dbMessDlg dbmess;
+        dbmess.showdbmess(query.lastError());
+    }
+    else
+    {
+        reportstablemodel->setQuery(query);
+        ui->reportsTableView->setModel(reportstablemodel);
+        ui->reportsTableView->horizontalHeader()->setFocusPolicy(Qt::NoFocus);
+
+        ui->reportsTableView->model()->setHeaderData(0,Qt::Horizontal,QVariant("#"));
+        ui->reportsTableView->model()->setHeaderData(1,Qt::Horizontal,QVariant("Название"));
+        ui->reportsTableView->model()->setHeaderData(2,Qt::Horizontal,QVariant("Описание"));
+
+        ui->reportsTableView->resizeColumnsToContents();
+        ui->reportsTableView->resizeRowsToContents();
+
+        QItemSelectionModel *sm = ui->reportsTableView->selectionModel();
+        connect(sm,   &QItemSelectionModel::currentChanged,
+                this, &MainWindow::         templatSelected);
+
+        if(reportstablemodel->query().size() > 0)
+        {
+            sm->setCurrentIndex(reportstablemodel->index(0,0),
+                                QItemSelectionModel::ClearAndSelect |
+                                QItemSelectionModel::Rows);
+        }
+    }
+}
+
+void MainWindow::templatSelected(const QModelIndex &current,
+                                 const QModelIndex &previous)
+{
+    int row = current.row();
+    int id  = current.model()->index(row,0).data().toInt();
+    QString name = current.model()->index(row,1).data().toString();
+    QString inf  = current.model()->index(row,2).data().toString();
+    ui->RepName->setText(name);
+    ui->RepInfo->setPlainText(inf);
+
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    QSqlQuery query(db);
+    query.prepare("SELECT repico FROM reports WHERE idreport = ?");
+    query.bindValue(0,QVariant(id));
+    if(query.exec() )
+    {
+        query.first();
+        QPixmap map;
+        QByteArray data = query.value(0).toByteArray();
+        map.loadFromData(data);
+        map = map.scaled(128,128, Qt::KeepAspectRatio,Qt::SmoothTransformation);
+        ui->thumbLabel->setPixmap(map);
+        ui->thumbLabel->setAlignment(Qt::AlignCenter);
+    }
+}
+
+void MainWindow::createReport()
+{
+    QModelIndex index = ui->reportsTableView->currentIndex();
+    if(!index.isValid()) return;
+    int row = index.row();
+    int id  = index.model()->index(row,0).data().toInt();
+
+    QSqlDatabase db = QSqlDatabase::database(connectionname);
+    QSqlQuery query(db);
+    query.prepare("SELECT repdata FROM reports WHERE idreport = ?");
+    query.bindValue(0, QVariant(id));
+    if(!query.exec())
+    {
+        dbMessDlg dbmess;
+        dbmess.showdbmess(query.lastError());
+        return ;
+    }
+    query.first();
+
+    QByteArray odtdata = query.value(0).toByteArray();
+
+    MyDocumentODF report;
+    report.setConnectionName(connectionname);
+    if(!report.readDocumentData(odtdata) )
+    {
+        if(report.isError())
+        {
+            QMessageBox mess;
+            mess.setWindowTitle("Ошибка построения отчета");
+            mess.setText("Произошла ошибка в процессе построения отчета.");
+            mess.setIcon(QMessageBox::Critical);
+            mess.addButton(QMessageBox::Ok);
+            mess.setButtonText(QMessageBox::Ok, "Ясно");
+            mess.exec();
+        }
+        else
+        {
+            QMessageBox mess;
+            mess.setWindowTitle("Отмена");
+            mess.setText("Действие отменено. Отчет не создан.");
+            mess.setIcon(QMessageBox::Information);
+            mess.addButton(QMessageBox::Ok);
+            mess.setButtonText(QMessageBox::Ok, "Ясно");
+            mess.exec();
+        }
+        return ;
+    }
+
+    QFileDialog filedlg;
+    QString newfile = filedlg.getSaveFileName(0,"Сохранение файла","","ODT files (*.odt)");
+    this->activateWindow();
+    if(newfile.isEmpty() ) return;
+    report.saveDocumentCopy(newfile);
+    QDesktopServices serv;
+
+    if(!serv.openUrl(QUrl::fromLocalFile(newfile)) )
+    {
+        QMessageBox mess;
+        mess.setWindowTitle("Ошибка построения отчета");
+        mess.setText("Произошла ошибка в процессе построения отчета.");
+        mess.setIcon(QMessageBox::Critical);
+        mess.addButton(QMessageBox::Ok);
+        mess.setButtonText(QMessageBox::Ok, "Ясно");
+        mess.exec();
+        return ;
+    }
+    this->activateWindow();
+}
+
+void MainWindow::createFilterForSelectedRecords()
+{
+    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
+    if(items.size() <= 0 ) return ;
+    QList<int> rows;
+    QModelIndexList::const_iterator itri;
+    for(itri = items.begin(); itri != items.end(); ++itri) rows << (*itri).row();
+    globaltable->createFilterForRecords(rows);
+    setGlobalTableFiltered();
+}
+
+void MainWindow::createFilterForUnSelectedRecords()
+{
+    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
+    if(items.size() <= 0 ) return ;
+    QList<int> selectedrows;
+    QModelIndexList::const_iterator itri;
+    for(itri = items.begin(); itri != items.end(); ++itri) selectedrows << (*itri).row();
+
+    QList<int> unselectedrows;
+    for(int i = 0; i < globaltable->getRecordsCount(); ++i)
+        if(!selectedrows.contains(i)) unselectedrows << i;
+    globaltable->createFilterForRecords(unselectedrows);
+    setGlobalTableFiltered();
 }
 
 void MainWindow::prepareSearchData(const QList<const MyField *> &fields,
@@ -639,10 +927,10 @@ void MainWindow::on_Filter_checked_button_clicked()
     globaltable->setFilterActivity(!oldstate);
     bool newstate = globaltable->isFiltered();
     if(newstate != oldstate)
-    {
         newstate &= refresh_table(globaltable);
-        ui->Filter_checked_button->setChecked(newstate);
-    }
+    if(newstate) Table_set_filtered->setText("Деактивировать фильтр");
+    else         Table_set_filtered->setText("Активировать фильтр");
+    ui->Filter_checked_button->setChecked(newstate);
 }
 
 void MainWindow::searchStart()
@@ -702,7 +990,6 @@ void MainWindow::subtableRecordEdit()
 
 void MainWindow::subtableRecordAdd()
 {
-    if(globalsubtable->getCurrentRowIndex() == -1) return;
     add_new_record(globalsubtable);
     subtablewidget->show();
 }
@@ -720,6 +1007,74 @@ void MainWindow::subtableRowSelected(int row)
 
 void MainWindow::on_Master_filter_button_clicked()
 {
-    tablefilter->setTable(globaltable);
     tablefilter->show();
+}
+
+void MainWindow::setGlobalTableFiltered()
+{
+    globaltable->setFilterActivity(true);
+    refresh_table(globaltable);
+    ui->Filter_checked_button->setChecked(globaltable->isFiltered());
+    if(globaltable->isFiltered())
+        Table_set_filtered->setText("Деактивировать фильтр");
+    else
+        Table_set_filtered->setText("Активировать фильтр");
+}
+
+void MainWindow::on_Filter_selected_button_clicked()
+{
+    createFilterForSelectedRecords();
+}
+
+void MainWindow::on_Filter_unselected_button_clicked()
+{
+    createFilterForUnSelectedRecords();
+}
+
+void MainWindow::sortUP(int column, QString name)
+{
+    globaltable->setCustomOrderData(column, "ASC");
+    refresh_table(globaltable);
+}
+
+void MainWindow::sortDown(int column, QString name)
+{
+    globaltable->setCustomOrderData(column, "DESC");
+    refresh_table(globaltable);
+}
+
+void MainWindow::clearOrders()
+{
+    globaltable->clearCustomOrdersData();
+    refresh_table(globaltable);
+}
+
+void MainWindow::on_tabWidget_currentChanged(int index)
+{
+    if(index == 2)
+    {
+        Status_search_frame->setVisible         (false);
+        Status_label_curtable->setVisible       (false);
+        Status_label_count_rows->setVisible     (false);
+        Status_label_count_selected->setVisible (false);
+        ui->stackedWidget->setCurrentIndex(1);
+    }
+    else
+    {
+        Status_search_frame->setVisible         (true);
+        Status_label_curtable->setVisible       (true);
+        Status_label_count_rows->setVisible     (true);
+        Status_label_count_selected->setVisible (true);
+        ui->stackedWidget->setCurrentIndex(0);
+    }
+}
+
+void MainWindow::on_Refresh_button2_clicked()
+{
+    getReportTemplatesTable();
+}
+
+void MainWindow::on_Create_Report_bt1_clicked()
+{
+    createReport();
 }

@@ -40,10 +40,19 @@ MyFilterModel::~MyFilterModel()
 void MyFilterModel::setFilterData(MyFilterNode *root,
                                   QList<const MyField *> fieldlist)
 {
+    if(rootnode != 0)
+    {
+        disconnect(rootnode, &MyFilterNode ::modified,
+                   this,     &MyFilterModel::filtermodified);
+    }
+
     rootnode    = root;
     if(!rootnode) return;
     fields      = fieldlist;
     fieldsname.clear();
+
+    connect(rootnode, &MyFilterNode ::modified,
+            this,     &MyFilterModel::filtermodified);
 
     QList<const MyField *>::const_iterator itr;
     for(itr = fields.begin(); itr != fields.end(); ++itr)
@@ -65,18 +74,22 @@ void MyFilterModel::refresh()
 
 MyFilterNode *MyFilterModel::nodeFromIndex(const QModelIndex& index) const
 {
-    if(!rootnode) return 0;
+    if(!rootnode || rootnode->isEmpty() ) return 0;
     if(!index.isValid()) return 0;
-    MyFilterNode* node = static_cast<MyFilterNode*>(index.internalPointer());
+    MyFilterNode* node;
+    if(! (node = static_cast<MyFilterNode*>(index.internalPointer()) ) )
+        return 0;
+
     if(node) return node;
     else return 0;
 }
 
 QModelIndex MyFilterModel::index(int row, int column, const QModelIndex &parent) const
 {
-    if(!rootnode || row<0 || column <0 || column >= 4) return QModelIndex();
-    if(!parent.isValid()) return createIndex(0,column,rootnode);
+    if(!rootnode || row<0 || column <0 || column >= 4 || rootnode->isEmpty() )
+        return QModelIndex();
     MyFilterNode * parentnode = nodeFromIndex(parent);
+    if(!parent.isValid()) return createIndex(0,column,rootnode);
     Q_ASSERT(parentnode);
     if(!parentnode || parentnode->isEmpty() || row >= parentnode->childCount())
         return QModelIndex();
@@ -87,22 +100,24 @@ QModelIndex MyFilterModel::index(int row, int column, const QModelIndex &parent)
 
 QModelIndex MyFilterModel::parent(const QModelIndex &child) const
 {
-    if(!rootnode || !child.isValid()) return QModelIndex();
+    if(!rootnode || !child.isValid() || rootnode->isEmpty() ) return QModelIndex();
     MyFilterNode* node = nodeFromIndex(child);
     Q_ASSERT(node);
     if(!node || node == rootnode) return QModelIndex();
     MyFilterNode* parent = node->parentNode();
+    if(!parent) return QModelIndex();
     Q_ASSERT(parent);
     if(parent == rootnode) return createIndex(0,0,rootnode);
     MyFilterNode* grandparent = parent->parentNode();
     Q_ASSERT(grandparent);
+    if(!grandparent) return QModelIndex();
     int row = grandparent->indexOf(parent);
     return createIndex(row,0,parent);
 }
 
 int MyFilterModel::columnCount(const QModelIndex &parent) const
 {
-    if(!rootnode) return 0;
+    if(!rootnode || rootnode->isEmpty() ) return 0;
     return 4;
 }
 
@@ -112,14 +127,16 @@ int MyFilterModel::rowCount(const QModelIndex &parent) const
     if(!parent.isValid() ) return 1;
     MyFilterNode * parentnode = nodeFromIndex(parent);
     Q_ASSERT(parentnode);
+    if(!parentnode ) return 0;
     if(parentnode) return parentnode->childCount();
     else return 0;
 }
 
 QVariant MyFilterModel::data(const QModelIndex &index, int role) const
 {
-    if(!index.isValid() ) return QVariant();
+    if(!index.isValid() || rootnode->isEmpty() ) return QVariant();
     MyFilterNode* node = nodeFromIndex(index);
+
     if(!node || (!node->isEmpty() && index.column() > 0) ) return QVariant();
 
     switch(role){
@@ -145,9 +162,8 @@ QVariant MyFilterModel::data(const QModelIndex &index, int role) const
             switch(index.column())
             {
             case 0: return QVariant();
-            case 1: return node->table() +
-                        fieldsname.value(index.data(Qt::EditRole).toInt(),
-                                         fieldsname[0]);
+            case 1: return fieldsname.value(index.data(Qt::EditRole).toInt(),
+                                            fieldsname[0]);
             case 2: return dispoperators.value(index.data(Qt::EditRole).toInt(), "равно");
             case 3: return node->value();
             }
@@ -321,12 +337,12 @@ bool MyFilterModel::setHeaderData(int section, Qt::Orientation orientation, cons
 
 bool MyFilterModel::insertRow(int row, const QModelIndex &parent)
 {
-    return false;
+    return true;
 }
 
 bool MyFilterModel::removeRow(int row, const QModelIndex &parent)
 {
-    return false;
+    return true;
 }
 
 void MyFilterModel::clearFilter()
@@ -334,6 +350,11 @@ void MyFilterModel::clearFilter()
     beginResetModel();
     rootnode->clear();
     endResetModel();
+}
+
+void MyFilterModel::filtermodified()
+{
+    refresh();
 }
 
 int MyFilterModel::fieldIndexOf(QString table, QString field) const

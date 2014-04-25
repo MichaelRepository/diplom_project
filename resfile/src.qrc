@@ -42,29 +42,33 @@
         <file>document.svg</file>
         <file>file_edit.svg</file>
         <file>save_icon.svg</file>
-        <file>key_icon.svg</file>
-        <file>fkey-icon.svg</file>
-        <file>table_row_rem.svg</file>
-        <file>table_row_add.svg</file>
-        <file>table_.svg</file>
-        <file>table_tmp.svg</file>
-        <file>table_row_ed.svg</file>
         <file>trash_.svg</file>
         <file>filter_group_icon.svg</file>
         <file>add_filter-icon.svg</file>
         <file>add_filter_group_icon.svg</file>
+        <file>expand_all.svg</file>
     </qresource>
     <qresource prefix="/style">
         <file>WowStyle.qss</file>
     </qresource>
     <qresource prefix="/png">
         <file>search-icon.png</file>
+        <file>up.png</file>
+        <file>down.png</file>
+        <file>table_row_ed.png</file>
+        <file>table_row_re.png</file>
+        <file>table_row_ad.png</file>
+        <file>refresh.png</file>
+        <file>iconmonstr-key-3-icon-16.png</file>
+        <file>iconmonstr-key-icon-16.png</file>
+        <file>table_.png</file>
+        <file>add_filter_group_icon.png</file>
     </qresource>
     <qresource prefix="/for_tree">
         <file>stylesheet-vline.png</file>
         <file>stylesheet-branch-more.png</file>
         <file>stylesheet-branch-end.png</file>
-        <file>stylesheet-branch-open.svg</file>
-        <file>stylesheet-branch-closed.svg</file>
+        <file>stylesheet-branch-closed.png</file>
+        <file>stylesheet-branch-open.png</file>
     </qresource>
 </RCC>
