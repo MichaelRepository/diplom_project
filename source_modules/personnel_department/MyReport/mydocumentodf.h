@@ -21,6 +21,8 @@
 #include <QtXml>
 #include <QtSql>
 
+#include <QFile>
+
 #include "QuaZIP/quazipfile.h"
 #include "QuaZIP/quazip.h"
 
@@ -98,10 +100,14 @@ class MyDocumentODF : public QObject
     Q_OBJECT
 public:
     explicit MyDocumentODF(QObject *parent = 0);
+    ~MyDocumentODF();
 
-    void setConnectionName(QString connect);
-    bool readDocumentData (QByteArray &data);                                   /// прочитать структуру файла
-    bool saveDocumentCopy (QString newfile);                                    /// записать копию файла
+    void setConnectionName (QString connect);
+    bool createDocumentFrom(QSqlQuery& querydata,
+                            const QStringList &fieldsname,
+                            const QList<int>& fields);    /// создать документ из данных запроса
+    bool readDocumentData  (QByteArray &data);                                  /// прочитать структуру файла
+    bool saveDocumentCopy  (QString newfile);                                   /// записать копию файла
 
     //QString lastError();
     bool isError() {return (error != MYDOC_NOERROR);}
@@ -109,11 +115,13 @@ public:
 private:
     bool readAllZippedFile(QByteArray &data);
     bool parsDocContent();                                                      /// получить структуру клюевых файлов
-    void findVariableSet(const QDomElement &element,
-                         QList<QDomElement> *variables);                        /// получить список полей-переменных
+    void findVariableSet(const QDomElement &element, QList<QDomElement> *variables);                        /// получить список полей-переменных
     MyRepObjectData parsVariableValue(QString value);                                      /// анализ струткуры значения поля-переменной
     bool replaceVariables(QDomElement &element, QDomDocument *dom);             /// замена поля-переменной на значение
     bool writeZippedFiles(QString file);                                        /// записать все файлы в новый массив
+
+    void createTable(MyFileStructure& forfile, QSqlQuery& querydata,
+                     const QList<int>& fields, const QStringList &fieldsname);
 
     /// указатели на данные файлов из списка, для быстрого доступа
     MyFileFromZip* contentfile;
@@ -128,6 +136,11 @@ private:
     QList<MyReplaceableField> globalrepfiellist;                                /// список замещаемых полей всех объектов подстановки в документе
 
     QString connection;                                                         /// имя соединения с БД
+    QDialog *catdlg;
+    QMovie  *catmovie;
+    // данные для построения документа из данных текущей таблицы
+    /*QSqlQuery  _querydata;
+    QList<int> _fields;*/
 };
 
 #endif // MYDOCUMENTODF_H

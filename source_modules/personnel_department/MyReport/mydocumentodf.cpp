@@ -6,19 +6,15 @@ MyDocumentODF::MyDocumentODF(QObject *parent) :
     error = MYDOC_NOERROR;
     contentfile = 0;
     stylesfile  = 0;
-}
 
-bool MyDocumentODF::readDocumentData(QByteArray &data)
-{
-    bool result = true;
-    error = MYDOC_NOERROR;
-    QDialog dlg;
-    QGridLayout *layout = new QGridLayout(&dlg);
-    QLabel *labelmovie  = new QLabel(&dlg);
-    QLabel *label       = new QLabel(&dlg);
-    QMovie *movie       = new QMovie("://cat.gif");
+    /// создание окна ожидания
+    catdlg = new QDialog();
+    QGridLayout *layout = new QGridLayout(catdlg);
+    QLabel *labelmovie  = new QLabel(catdlg);
+    QLabel *label       = new QLabel(catdlg);
+    catmovie            = new QMovie("://cat.gif");
 
-    dlg.setLayout(layout);
+    catdlg->setLayout(layout);
     layout->setMargin(0);
     layout->setSpacing(0);
     layout->addWidget(labelmovie);
@@ -28,26 +24,107 @@ bool MyDocumentODF::readDocumentData(QByteArray &data)
     label->setStyleSheet("background-color: #3C3C3C; color:#fff; font-size:15px;");
     label->setAlignment(Qt::AlignCenter);
     label->resize(20,20);
-    labelmovie->setMovie(movie);
-    movie->start();
+    labelmovie->setMovie(catmovie);
+    catdlg->setWindowFlags(Qt::SplashScreen);
 
-    dlg.setWindowFlags(Qt::SplashScreen);
-    dlg.show();
+}
+
+MyDocumentODF::~MyDocumentODF()
+{
+    catmovie->deleteLater();
+    catdlg->deleteLater();
+}
+
+bool MyDocumentODF::readDocumentData(QByteArray &data)
+{
+    bool result = true;
+    error = MYDOC_NOERROR;
+
+    catmovie->start();
+    catdlg->show();
 
     /// основная логика по разбору шаблона документа
     result = readAllZippedFile(data);                                           /// получения массивов данных каждого файла архива
+    if(result) result = parsDocContent();                                       /// разбор структуры двух основных файлов content и styles
+
+    /// поиск всех заменяемых элементов (полей-переменных)
+    /// формируются variables - списки переменных внутри каждой из структур
+    findVariableSet(contentstruct.bodyroot,    &contentstruct.variables);
+    findVariableSet(stylesstruct.master_page,  &stylesstruct.variables);
+
+    /// замена переменных в content
+    /// обработка списка variables
+    if(result && contentstruct.variables.size() != 0 )
+    {
+        QList<QDomElement>::iterator itr;
+        for(itr = contentstruct.variables.begin(); itr != contentstruct.variables.end(); ++itr)
+        {
+            /// анализ объекта подстановки, являющегося значением поля-переменной
+            result &= replaceVariables(*itr, &contentstruct.dom);
+            if(!result) break;
+        }
+    }
+    /// замена переменных в styles
+    if(result && stylesstruct.variables.size() != 0 )
+    {
+        QList<QDomElement>::iterator itr;
+        for(itr = stylesstruct.variables.begin(); itr != stylesstruct.variables.end(); ++itr)
+        {
+            /// анализ объекта подстановки, являющегося значением поля-переменной
+            result &= replaceVariables(*itr, &stylesstruct.dom);
+            if(!result) break;
+        }
+    }
+
+    /// получение обработанных данных для последующего сохранения в файл
     if(result)
-        result = parsDocContent();                                              /// разбор структуры двух основных файлов content и styles
+    {
+        contentfile->data = contentstruct.dom.toByteArray();
+        stylesfile->data  = stylesstruct.dom.toByteArray();
+    }
 
-    movie->stop();
-    movie->deleteLater();
-
+    catmovie->stop();
     return result;
 }
 
 bool MyDocumentODF::saveDocumentCopy(QString newfile)
 {
     return writeZippedFiles(newfile);
+}
+
+bool MyDocumentODF::createDocumentFrom(QSqlQuery &querydata,
+                                       const QStringList &fieldsname,
+                                       const QList<int> &fields)
+{
+    bool result = true;
+    error = MYDOC_NOERROR;
+
+    catmovie->start();
+    catdlg->show();
+
+    QFile templatedoc("://template_.odt");
+    if(!templatedoc.open(QIODevice::ReadOnly) ) return false;
+    QByteArray data = templatedoc.readAll();
+    templatedoc.close();
+
+   // _querydata = querydata;
+   // _fields    = fields;
+
+    result = readAllZippedFile(data);                                           /// получения массивов данных каждого файла архива
+    if(result) result = parsDocContent();
+
+    createTable(contentstruct, querydata, fields, fieldsname); // создать таблицу
+
+    /// получение обработанных данных для последующего сохранения в файл
+    if(result)
+    {
+        contentfile->data = contentstruct.dom.toByteArray();
+        stylesfile->data  = stylesstruct.dom.toByteArray();
+    }
+
+    catmovie->stop();
+    return result;
+
 }
 
 void MyDocumentODF::setConnectionName(QString connect)
@@ -96,7 +173,7 @@ void MyDocumentODF::findVariableSet(const QDomElement &element, QList<QDomElemen
 
 bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
 {
-    /**
+    /**  замена объекта - переменной данными
      * тип переменной определяет расположение значения переменной
      * string - содержит значение внутри value
      * float  - содержит значение в параметре formula
@@ -141,62 +218,64 @@ bool MyDocumentODF::replaceVariables(QDomElement &element, QDomDocument* dom)
              * новых узлов в DOM файла content
             */
         }
-        if(!objectdata.valueisquery)
+        if(objectdata.valueisquery ) /// отчет запросил данные из БД
+        {
+            /// получить данные из БД
+            QSqlDatabase db = QSqlDatabase::database(connection);
+            QSqlQuery query(db);
+            if(!query.exec(objectdata.value) ) { error = MYDOC_OBJECTSTRUCTERROR; return false;}
+            //if(query.size() == 0)              { error = DATANOTFOUND; return false;}
+            if(query.size() == 0)
+            {
+                QDomNode newelement = control.firstChildElement().cloneNode(false);
+                QDomNode removed    = control.replaceChild(newelement, control.firstChildElement());
+                removed.clear();
+                break;
+            }
+            /// разместить данные в таблице отчета
+            QDomNode firstrow   = control.parentNode();
+            QDomNode table      = firstrow.parentNode();
+
+            int rowindex = 0;
+            while (query.next())
+            {
+                QDomNode    newrow;
+                if(rowindex == 0) newrow = firstrow;
+                else              newrow = firstrow.cloneNode();
+                QDomElement cell = newrow.firstChildElement();
+
+                int colindex = 0;
+                while(!cell.isNull())                                               /// обойти все ячеки текущей строки
+                {
+                    QDomElement cellcontent = cell.firstChildElement();             /// получить первый элемент в ячейке
+                    QDomElement newelement  = dom->createElement("text:span");      /// создать новый элемент p
+                    /// создать текстовый элемент со значением из БД
+                    QDomText    textelement;
+                    QString value = "";
+                    if(colindex < query.record().count()) value = query.value(colindex).toString();
+
+                    textelement = dom->createTextNode(value);
+
+                    newelement.appendChild(textelement);                            /// добавить элементу - p текстовый элемент
+                    /// заменить содержимое ячейки
+                    QDomNode newcellcontent = cellcontent.cloneNode(false);         /// новое содержимое ячейки - это чистая (без вложений) копия первого чилд узла
+                    QDomNode removednode    = cell.replaceChild(newcellcontent,
+                                                                cellcontent);
+                    removednode.clear();
+                    newcellcontent.appendChild(newelement);
+
+                    cell = cell.nextSiblingElement();
+                    ++colindex;
+                }
+                table.appendChild(newrow);
+                ++rowindex;
+            }
+        }
+        else
         {
             /// если объект не содержит запроса к БД
             error = MYDOC_OBJECTSTRUCTERROR;
             return false;
-        }
-
-        /// получить данные из БД
-        QSqlDatabase db = QSqlDatabase::database(connection);
-        QSqlQuery query(db);
-        if(!query.exec(objectdata.value) ) { error = MYDOC_OBJECTSTRUCTERROR; return false;}
-        //if(query.size() == 0)              { error = DATANOTFOUND; return false;}
-        if(query.size() == 0)
-        {
-            QDomNode newelement = control.firstChildElement().cloneNode(false);
-            QDomNode removed    = control.replaceChild(newelement, control.firstChildElement());
-            removed.clear();
-            break;
-        }
-        /// разместить данные в таблице отчета
-        QDomNode firstrow   = control.parentNode();
-        QDomNode table      = firstrow.parentNode();
-
-        int rowindex = 0;
-        while (query.next())
-        {
-            QDomNode    newrow;
-            if(rowindex == 0) newrow = firstrow;
-            else              newrow = firstrow.cloneNode();
-            QDomElement cell = newrow.firstChildElement();
-
-            int colindex = 0;
-            while(!cell.isNull())                                               /// обойти все ячеки текущей строки
-            {
-                QDomElement cellcontent = cell.firstChildElement();             /// получить первый элемент в ячейке
-                QDomElement newelement  = dom->createElement("text:span");      /// создать новый элемент p
-                /// создать текстовый элемент со значением из БД
-                QDomText    textelement;
-                QString value = "";
-                if(colindex < query.record().count()) value = query.value(colindex).toString();
-
-                textelement = dom->createTextNode(value);
-
-                newelement.appendChild(textelement);                            /// добавить элементу - p текстовый элемент
-                /// заменить содержимое ячейки
-                QDomNode newcellcontent = cellcontent.cloneNode(false);         /// новое содержимое ячейки - это чистая (без вложений) копия первого чилд узла
-                QDomNode removednode    = cell.replaceChild(newcellcontent,
-                                                            cellcontent);
-                removednode.clear();
-                newcellcontent.appendChild(newelement);
-
-                cell = cell.nextSiblingElement();
-                ++colindex;
-            }
-            table.appendChild(newrow);
-            ++rowindex;
         }
         break;
     }
@@ -335,7 +414,7 @@ MyRepObjectData MyDocumentODF::parsVariableValue(QString value)
             if(texttype == "ENUM")   robject.typevar = MYREP_ENUM;
         }
         else
-            robject.typevar = MYREP_FIELD_NULL;                                       /// если есть такое поле, то сдлать текущее не читабельным
+            robject.typevar = MYREP_FIELD_NULL;                                 /// если есть такое поле, то сделать текущее не читабельным
 
         resultlist.append(robject);
 
@@ -553,119 +632,119 @@ bool MyDocumentODF::parsDocContent()
     stylesstruct.header          = stylesstruct.master_page.firstChildElement("style:header");
     stylesstruct.footer          = stylesstruct.master_page.firstChildElement("style:footer");
 
-    /// поиск всех заменяемых элементов (полей-переменных)
-    /// формируются variables - списки переменных внутри каждой из структур
-    findVariableSet(contentstruct.bodyroot,    &contentstruct.variables);
-    findVariableSet(stylesstruct.master_page,  &stylesstruct.variables);
-
-    /// замена переменных в content
-    /// обработка списка variables
-    if(contentstruct.variables.size() != 0 )
-    {
-        QList<QDomElement>::iterator itr;
-        for(itr = contentstruct.variables.begin(); itr != contentstruct.variables.end(); ++itr)
-        {
-            /// анализ объекта подстановки, являющегося значением поля-переменной
-            if(!replaceVariables(*itr, &contentstruct.dom) ) return false;
-        }
-    }
-    /// замена переменных в styles
-    if(stylesstruct.variables.size() != 0 )
-    {
-        QList<QDomElement>::iterator itr;
-        for(itr = stylesstruct.variables.begin(); itr != stylesstruct.variables.end(); ++itr)
-        {
-            /// анализ объекта подстановки, являющегося значением поля-переменной
-            if(!replaceVariables(*itr, &stylesstruct.dom) ) return false;
-        }
-    }
-
-    /// получение обработанных данных для последующего сохранения в файл
-    contentfile->data = contentstruct.dom.toByteArray();
-    stylesfile->data  = stylesstruct.dom.toByteArray();
-
     return true;
 }
 
-/*
-void MyDocumentODF::createTable()
+/** создание таблицы **/
+
+void MyDocumentODF::createTable(MyFileStructure& forfile,
+                                QSqlQuery& querydata,
+                                const QList<int>& fields,
+                                const QStringList& fieldsname)
 {
-    /// создание таблицы
-    QDomElement mytable = dom.createElement("table:table");
-    mytable.setAttribute("table:name","MyTable");
-    mytable.setAttribute("table:style-name","MyTableStyle");
+    int colcount  = fields.size();
+    //int rowcount = querydata.size();
 
-    QDomElement mytablecol1 = dom.createElement("table:table-column");
-    mytablecol1.setAttribute("table:style-name","MyTableColumnStyle");
+    double tablewidth = 17;                     // по умолчанию
+    double colwidth   = tablewidth / colcount;
 
-    QDomElement mytablecol2 = dom.createElement("table:table-column");
-    mytablecol2.setAttribute("table:style-name","MyTableColumnStyle");
+    QString tablestylename   = "MyTableStyle";
+    QString tablecolumnstyle = "MyTableColumnStyle";
+    QString tablecellstyle   = "MyTableCellStyle";
 
-    QDomElement mytablerow = dom.createElement("table:table-row");
-    QDomElement mytablecell1 = dom.createElement("table:table-cell");
-    mytablecell1.setAttribute("table:style-name","MyTableCellStyle");
-    mytablecell1.setAttribute("office:value-type","string");
-
-    QDomElement mytablecell2 = dom.createElement("table:table-cell");
-    mytablecell2.setAttribute("table:style-name","MyTableCellStyle");
-    mytablecell2.setAttribute("office:value-type","string");
-
-    QDomElement celltext = dom.createElement("text:p");
-    QDomText    text = dom.createTextNode("Здравия желаю");
-    celltext.appendChild(text);
-
-    mytable.appendChild(mytablecol1);
-    mytable.appendChild(mytablecol2);
-    mytable.appendChild(mytablerow);
-    mytablerow.appendChild(mytablecell1);
-    mytablerow.appendChild(mytablecell2);
-    mytablecell1.appendChild(celltext);
-
-    bodyroot.appendChild(mytable);
-}
-
-void MyDocumentODF::createTableStyle()
-{
-    QDomElement tablestyle = createTableStyle("MyTableStyle","10cm","left");
-
-    QDomElement tablecolumstyle = dom.createElement("style:style");
-    tablecolumstyle.setAttribute("style:name","MyTableColumnStyle");
-    tablecolumstyle.setAttribute("style:family","table-column");
-
-    QDomElement tablecolumnproperties = dom.createElement("style:table-column-properties");
-    tablecolumnproperties.setAttribute("style:column-width", "5cm");
-    tablecolumstyle.appendChild(tablecolumnproperties);
-
-    QDomElement tablecellstyle = createCellStyle("MyTableCellStyle", "0.097cm", "0.05pt solid #000000");
-
-}
-
-QDomElement MyDocumentODF::createCellStyle(QString stylename, QString padding, QString border)
-{
-    QDomElement cellstyle = dom.createElement("style:style");
-    cellstyle.setAttribute("style:name",    stylename);
-    cellstyle.setAttribute("style:family",  "table-cell");
-
-    QDomElement cellproperties = dom.createElement("style:table-cell-properties");
-    cellproperties.setAttribute("fo:padding",      padding);
-    cellproperties.setAttribute("fo:border-right", border);
-    cellproperties.setAttribute("fo:border-left",  border);
-    cellproperties.setAttribute("fo:border-top",   border);
-    cellproperties.setAttribute("fo:border-bottom",border);
-    cellstyle.appendChild(cellproperties);
-    return cellstyle;
-}
-
-QDomElement MyDocumentODF::createTableStyle(QString stylename, QString width, QString align)
-{
-    QDomElement tablestyle = dom.createElement("style:style");
-    tablestyle.setAttribute("style:name",stylename);
+    /// описание стилей
+    /// таблица
+    QDomElement tablestyle = forfile.dom.createElement("style:style");
+    tablestyle.setAttribute("style:name", tablestylename);
     tablestyle.setAttribute("style:family","table");
-
-    QDomElement tableproperties = dom.createElement("style:table-properties");
-    tableproperties.setAttribute("style:width", width);
-    tableproperties.setAttribute("table:align", align);
+    QDomElement tableproperties = forfile.dom.createElement("style:table-properties");
+    tableproperties.setAttribute("style:width", tablewidth);
+    //tableproperties.setAttribute("table:align", align);
     tablestyle.appendChild(tableproperties);
-    return tablestyle;
+    forfile.automatic_styles.appendChild(tablestyle);
+    /// колонки
+    QDomElement columnstyle = forfile.dom.createElement("style:style");
+    columnstyle.setAttribute("style:name", tablecolumnstyle);
+    columnstyle.setAttribute("style:family","table-column");
+    QDomElement columnproperties = forfile.dom.createElement("style:table-column-properties");
+    columnproperties.setAttribute("style:column-width", QString::number(colwidth)+"cm");
+    columnproperties.setAttribute("style:rel-column-width", "6553*");
+    columnstyle.appendChild(columnproperties);
+    forfile.automatic_styles.appendChild(columnstyle);
+    /// ячейки
+    QDomElement cellstyle = forfile.dom.createElement("style:style");
+    cellstyle.setAttribute("style:name",    tablecellstyle);
+    cellstyle.setAttribute("style:family",  "table-cell");
+    QDomElement cellproperties = forfile.dom.createElement("style:table-cell-properties");
+    cellproperties.setAttribute("fo:padding",      "0.097cm");
+    cellproperties.setAttribute("fo:border-right", "0.05pt solid #000000");
+    cellproperties.setAttribute("fo:border-left",  "0.05pt solid #000000");
+    cellproperties.setAttribute("fo:border-top",   "0.05pt solid #000000");
+    cellproperties.setAttribute("fo:border-bottom","0.05pt solid #000000");
+    cellstyle.appendChild(cellproperties);
+    forfile.automatic_styles.appendChild(cellstyle);
+
+    /// создание таблицы
+    QDomElement mytable = forfile.dom.createElement("table:table");
+    mytable.setAttribute("table:name","MyTable");
+    mytable.setAttribute("table:style-name",tablestylename);
+    /// описание столбцов
+    for(int i = 0; i < colcount; ++i)
+    {
+        QDomElement mytablecolumn = forfile.dom.createElement("table:table-column");
+        mytablecolumn.setAttribute("table:style-name",tablecolumnstyle);
+        mytable.appendChild(mytablecolumn);
+    }
+    /// описание строк и ячеек строки
+    querydata.first();
+    /// создание шапки таблицы
+    QDomElement mytablerow = forfile.dom.createElement("table:table-row");
+
+    int colindex = 0;
+    for(int c = 0; c < colcount; ++c)
+    {
+        colindex = fields[c];
+        // ячейка шапки
+        QDomElement mytablecell = forfile.dom.createElement("table:table-cell");
+        mytablecell.setAttribute("table:style-name",tablecellstyle);
+        mytablecell.setAttribute("office:value-type","string");
+        // контент ячейки шапки
+        QDomElement celltext = forfile.dom.createElement("text:p");
+        // реальное значение ячейки
+        QString value = fieldsname[c];
+        QDomText text = forfile.dom.createTextNode(value);
+        celltext.appendChild(text);
+        mytablecell.appendChild(celltext);
+
+        mytablerow.appendChild(mytablecell);
+    }
+    mytable.appendChild(mytablerow);
+    /// заполнение таблицы значениями
+    do// пройти все записи
+    {
+        QDomElement mytablerow = forfile.dom.createElement("table:table-row");
+
+        int colindex = 0;
+        for(int c = 0; c < colcount; ++c)
+        {
+            colindex = fields[c];
+            // ячейка
+            QDomElement mytablecell = forfile.dom.createElement("table:table-cell");
+            mytablecell.setAttribute("table:style-name",tablecellstyle);
+            mytablecell.setAttribute("office:value-type","string");
+            // контент ячейки
+            QDomElement celltext = forfile.dom.createElement("text:p");
+            // реальное значение ячейки
+            QString value = querydata.value(colindex).toString();
+            QDomText text = forfile.dom.createTextNode(value);
+            celltext.appendChild(text);
+            mytablecell.appendChild(celltext);
+
+            mytablerow.appendChild(mytablecell);
+        }
+        mytable.appendChild(mytablerow);
+    }
+    while(querydata.next() );
+
+    forfile.bodyroot.appendChild(mytable);
 }
-*/

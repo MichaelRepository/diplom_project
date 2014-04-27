@@ -43,6 +43,7 @@ void MyTable::appendField(const QString &field, const QString &table,
         subtables.append(MySubtable());                                         /// добавить новую субтаблицу, если такой еще небыло в списке
         subtableindex = subtables.size()-1;
         subtables[subtableindex].name = table;                                  /// задать имя субтаблице
+        subtables[subtableindex].altername = metadata->getAlterNameForTable(table);
         mainselect.addFromItem(table);                                     /// добавление таблицы в структуру select запроса
     }
     subtables[subtableindex].fields.append(pfield);                             /// добавить текущее поле в список полей субтаблицы
@@ -376,16 +377,18 @@ bool MyTable::removeRecords(const QList<int> records)
     if(records.size() <= 0) return false;
     QSqlDatabase db = QSqlDatabase::database(connectionname);
     if(!db.open()){sqlerror = db.lastError(); return false;}
-
+    sqlerror = QSqlError();
     db.transaction();
     QList<int>::const_iterator itrr;
     for(itrr = records.begin(); itrr!=records.end(); ++itrr)
     {
         if(!tablequery.seek((*itrr) ) )
         {
+            sqlerror = tablequery.lastError();
             db.rollback();
             return false;
         }
+        sqlerror = QSqlError();
 
         QList<MySubtable>::const_iterator itr;
         for(itr = subtables.begin(); itr != subtables.end(); ++itr)
@@ -399,7 +402,7 @@ bool MyTable::removeRecords(const QList<int> records)
                 QSqlQuery query(db);
                 if(!query.exec(querytex) )
                 {
-                    sqlerror = db.lastError();
+                    sqlerror = query.lastError();
                     db.rollback();
                     return false;
                 }
@@ -465,10 +468,19 @@ MySqlRecord *MyTable::getEmptyRecordForInsert()
 {
     /// сформировать данные для копии запрашиваемой строки
     editablerecord.clear();
+    tablequery.seek(0);
+    QSqlRecord record = tablequery.record();
+    record.clearValues();
     QList<MyField>::const_iterator itr;
+    int index = 0;
     for(itr = fields.begin(); itr != fields.end(); ++itr)
     {
-        if((*itr).isEditable) editablerecord.append(&(*itr));
+        if((*itr).isEditable)
+        {
+            editablerecord.append(&(*itr));
+            editablerecord.setValue(index, record.value((*itr).name) );
+            ++index;
+        }
     }
 
     return &editablerecord;
@@ -544,6 +556,24 @@ void MyTable::clearCustomOrdersData()
     mainselect.clearCustomOrdersData();
 }
 
+QSqlQuery MyTable::getTableQueryData() const
+{
+    return tablequery;
+}
+
+QList<int> MyTable::fieldsIndexOfColumns(const QList<int> &columns) const
+{
+    QList<int> resultlist;
+    QList<int>::const_iterator itr;
+    for(itr = columns.begin(); itr != columns.end(); ++itr)
+    {
+        int index = fieldRealIndexOf((*itr) );
+        if(index != -1)
+        resultlist << index;
+    }
+    return resultlist;
+}
+
 bool MyTable::contains(const QString &field) const
 {
     if(fields.size() == 0) return false;
@@ -604,6 +634,12 @@ int MyTable::fieldRealIndexOf(QString field) const
         if((*itr).name.toUpper() == field.toUpper()) return (*itr).realindex;
     }
     return -1;
+}
+
+int MyTable::fieldRealIndexOf(int col) const
+{
+    if(fields.size() == 0 || col < 0 || col >= fieldforviewer.size()) return -1;
+    return fieldforviewer[col]->realindex;
 }
 
 int MyTable::fieldViewIndexOf(QString field) const
@@ -672,21 +708,27 @@ bool MyTable::prepareSubtables()/// подготовить данные кажд
 
 bool MyTable::getExtendedDataOfFields()
 {
-    QList<MySubtable>::iterator itrt;
+    /*QList<MySubtable>::iterator itrt;
     QList<MyField*>  ::iterator itrf;
     for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
     {
         QList<MyField*> *tablefields = &(*itrt).fields;
         for(itrf = tablefields->begin(); itrf != tablefields->end(); ++itrf)
         {
+            /// получить данные поля
+            // старый вариант
             (*itrf)->altername  = metadata->getAlterName ((*itrt).name,(*itrf)->name);
             (*itrf)->validator  = metadata->getValidator ((*itrt).name,(*itrf)->name);
             (*itrf)->alterfield = metadata->getAlterField((*itrt).name,(*itrf)->name);
-            // получить реальный тип данных!
+
         }
 
-    }
+    }*/
+
+    metadata->getDataForFields(fields);
+
     /// обработка полей - внешних ключей
+    QList<MySubtable>::iterator itrt;
     for(itrt = subtables.begin(); itrt != subtables.end(); ++itrt)
     {
         QVector<MyDataOfKey> fklist;
@@ -757,6 +799,12 @@ QVariant MyTable::displayFieldValue(int row, const QString &field)
 {
     int col = fieldViewIndexOf(field);
     return displayCellValue(row, col);
+}
+
+QString MyTable::displayFieldRealType(int index)
+{
+    if(index < 0 || index >= fieldforviewer.size() ) return QString();
+    return fieldforviewer[index]->realtype;
 }
 
 bool MyTable::displayedFieldIsForeign(int index) const

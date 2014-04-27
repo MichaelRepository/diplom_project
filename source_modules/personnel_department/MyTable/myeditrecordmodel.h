@@ -29,8 +29,9 @@ public:
     int columnCount (const QModelIndex & parent = QModelIndex()) const;         /// возвращает кол-во столбцов относительно родительского индекса
     int rowCount    (const QModelIndex & parent = QModelIndex()) const;         /// возвращает число строк относительно родительского индекса
     QVariant data   (const QModelIndex & index, int role = Qt::DisplayRole) const; /// отображение данных текущего индекса, относительно роли объекта
-    bool setRecordData    (const QModelIndex & index, const QVariant & value,         /// записывает данные в элемент соответсвующий индексу
-                     int role = Qt::EditRole);
+
+    bool setData(const QModelIndex & index, const QVariant & value,
+                 int role = Qt::EditRole);
     QVariant headerData ( int section, Qt::Orientation orientation,             /// данные в заголовках столбцов
                           int role = Qt::DisplayRole ) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;                        /// установка флагов (активный, выделяемый и т.д)

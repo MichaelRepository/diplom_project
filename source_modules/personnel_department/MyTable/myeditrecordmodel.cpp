@@ -34,38 +34,120 @@ QVariant EditRecordModel::data(const QModelIndex &index, int role) const
     if(!index.isValid() || index.row() > recorddata->count())
         return QVariant();
 
-    switch(role)                                                                /// относительно роли индекса возвращается значение
+    /* изменения в работе модели и делегата.
+     * - необходимо определить реальный тип данных поля
+     * - в displayrole выдавать значение поля
+     * - в editrole передавать значение, либо его варианты
+     * - в userrole передавать реальный тип данных поля
+     * - в userrole+1 передавать валидатор поля
+     * - в userrole+2 передавать текст sql запроса, если поле - внешний ключ
+     * - в userrole+3 передать список альтернативных имен для полей таблицы
+     *   получаемой из sql запроса (из userrole+2)
+     * - в userrole+4 передать имя поля, замещающего текущее
+    */
+
+    QString realtype = recorddata->realTypeOfField(index.row() );
+    if(realtype.isEmpty() ) return QVariant();
+
+    switch(role)
     {
-    case Qt::DisplayRole:
-    case Qt::EditRole:{
-        switch(index.column())
+    case Qt::DisplayRole:{
+        if(index.column() == 0 )
+            return QVariant(recorddata->alterNameOfField(index.row()) );
+        else
         {
-        case 0:{                                                                /// название атрибута
-            return QVariant( recorddata->alterNameOfField(index.row()));        /// отобразить альтернативное имя
-        }
-        case 1:{                                                                /// значение атрибута
-                if(recorddata->alterField(index.row()).size() > 0)
-                    return recorddata->alterData(index.row());
-                return recorddata->value(index.row());
-        }
-        default: return QVariant();
+                /*if(recorddata->alterField(index.row()).isEmpty() )
+                    return recorddata->value(index.row());
+                else
+                    return recorddata->alterData(index.row());*/
+
+                if(realtype == "TINYINT")
+                {
+                    if(recorddata->value(index.row() ).toBool() ) return "да";
+                    else return "нет";
+                }
+                else return recorddata->value(index.row() );
         }
     }
-    case Qt::TextAlignmentRole:                                                 /// определяет размещение текста
-        return Qt::AlignLeft;
-    /*case Qt::BackgroundColorRole:
-        return qVariantFromValue(QColor(255, 255, 191, 127));*/
-    case Qt::CheckStateRole:                                                    /// определяет наличие переключателя
-        return  QVariant();
-    default: return QVariant();                                                 /// все остальные роли будут получать невалидный QVariant
+    case Qt::EditRole:{
+
+        if(index.column() == 0) return QVariant();
+        else
+        {
+            /*if(recorddata->alterField(index.row()).isEmpty() )
+                return recorddata->value(index.row());
+            else
+                return recorddata->alterData(index.row());*/
+
+            if(realtype == "TINYINT")
+            {
+                QStringList list;
+                list << "да" << "нет";
+                return list;
+            }
+            else if(realtype == "ENUM")
+                return recorddata->getEnumVariants(index.row() );
+            else
+                return recorddata->value(index.row() );
+        }
+    }
+    case Qt::UserRole:{ /// передать тип переменной, стандарта СУБД
+        if(index.column() == 0)
+            return QVariant();
+        else
+            return realtype;
+    }
+    case Qt::UserRole+1:{/// передать рег. выражение для валидатора
+        if(index.column() == 0)
+            return QVariant();
+        else
+            return recorddata->validatorOfField(index.row() );
+    }
+    case Qt::UserRole+2:{/// передать текст SQL запроса
+        if(index.column() == 0)
+            return QVariant();
+        else
+        {
+            MyDataReference reference = recorddata->referenceDataOfField(index.row() );
+            return reference.sqltext;
+        }
+    }
+    case Qt::UserRole+3:{/// передать список альтернативных имен для полей
+        if(index.column() == 0)
+            return QVariant();
+        else
+        {
+            MyDataReference reference = recorddata->referenceDataOfField(index.row() );
+            return reference.alternames;
+        }
+    }
+    case Qt::UserRole+4:{/// передать имя поля, замещающего текущее
+        if(index.column() == 0)
+            return QVariant();
+        else
+            return recorddata->alterField(index.row() );
+    }
+    default: return QVariant();
     }
 }
 
-bool EditRecordModel::setRecordData(const QModelIndex &index, const QVariant &value, int role)
+bool EditRecordModel::setData(const QModelIndex &index, const QVariant &value, int role)
 {
     if(!index.isValid() || role != Qt::EditRole) return false;
-    //recorddata->field(index.row()).setReadOnly(false);
-    recorddata->setValue(index.row(),value);
+
+    QString realtype = recorddata->realTypeOfField(index.row() );
+    if(realtype.isEmpty() ) return false;
+
+    if(realtype == "TINYINT" )
+    {
+        if(value.toString() == "да")
+            recorddata->setValue(index.row(), 1);
+        else
+            recorddata->setValue(index.row(), 0);
+    }
+    else
+        recorddata->setValue(index.row(), value);
+
     return true;
 }
 
@@ -85,17 +167,7 @@ QVariant EditRecordModel::headerData(int section, Qt::Orientation orientation, i
 Qt::ItemFlags EditRecordModel::flags(const QModelIndex &index) const
 {
     if(!index.isValid()) return 0;
-
-    Qt::ItemFlags theFlags = QAbstractTableModel::flags(index);
-
-    switch(index.column()){
-    case 0: theFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;                /// первый столбец - наименование атрибута (не редактируется)
-        break;
-    case 1: theFlags |= Qt::ItemIsSelectable| Qt::ItemIsEditable|               /// второй столбец - значение атрибутов (редактируемый)
-                        Qt::ItemIsEnabled;
-        break;
-    default: theFlags = 0;
-    }
-
+    Qt::ItemFlags theFlags = Qt::ItemIsSelectable | Qt::ItemIsEnabled;
+    if(index.column() == 1) theFlags |= Qt::ItemIsEditable;
     return theFlags;
 }

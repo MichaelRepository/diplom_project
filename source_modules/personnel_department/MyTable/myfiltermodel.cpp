@@ -57,9 +57,11 @@ void MyFilterModel::setFilterData(MyFilterNode *root,
     QList<const MyField *>::const_iterator itr;
     for(itr = fields.begin(); itr != fields.end(); ++itr)
     {
-        QString name = (*itr)->altername;
-        if(name.isEmpty()) name = (*itr)->name;
-        name = (*itr)->table->name+"."+name;
+        QString name  = (*itr)->altername;
+        QString table = (*itr)->table->altername;
+        if(name.isEmpty())   name  = (*itr)->name;
+        if(table.isEmpty() ) table = (*itr)->table->name;
+        name = table+"."+name;
         fieldsname.append(name);
     }
 

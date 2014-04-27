@@ -3,6 +3,7 @@
         <file>SplashScreen.jpg</file>
         <file>cat.ico</file>
         <file>cat.gif</file>
+        <file>template_.odt</file>
     </qresource>
     <qresource prefix="/svg">
         <file>business-card.svg</file>
@@ -47,6 +48,7 @@
         <file>add_filter-icon.svg</file>
         <file>add_filter_group_icon.svg</file>
         <file>expand_all.svg</file>
+        <file>export_in_document.svg</file>
     </qresource>
     <qresource prefix="/style">
         <file>WowStyle.qss</file>

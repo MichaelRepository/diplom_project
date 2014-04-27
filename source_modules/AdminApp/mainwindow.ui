@@ -67,7 +67,7 @@ QTabBar::tab:selected {
 }</string>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideLeft</enum>
@@ -78,18 +78,59 @@ QTabBar::tab:selected {
       <property name="documentMode">
        <bool>false</bool>
       </property>
-      <widget class="QWidget" name="tab_2">
-       <attribute name="title">
-        <string>...</string>
-       </attribute>
-      </widget>
       <widget class="QWidget" name="tab_3">
        <property name="enabled">
         <bool>true</bool>
        </property>
        <attribute name="title">
-        <string>...</string>
+        <string>Расширенные параметры полей</string>
        </attribute>
+       <widget class="QListView" name="listView">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>20</y>
+          <width>111</width>
+          <height>341</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>0</y>
+          <width>151</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Таблицы</string>
+        </property>
+       </widget>
+       <widget class="QTableView" name="tableView">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>20</y>
+          <width>461</width>
+          <height>341</height>
+         </rect>
+        </property>
+       </widget>
+       <widget class="QLabel" name="label_2">
+        <property name="geometry">
+         <rect>
+          <x>120</x>
+          <y>0</y>
+          <width>461</width>
+          <height>16</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>Поля</string>
+        </property>
+       </widget>
       </widget>
       <widget class="QWidget" name="tab_4">
        <attribute name="title">
@@ -486,6 +527,11 @@ color:#fff};</string>
          </widget>
         </item>
        </layout>
+      </widget>
+      <widget class="QWidget" name="tab_2">
+       <attribute name="title">
+        <string>...</string>
+       </attribute>
       </widget>
      </widget>
     </item>

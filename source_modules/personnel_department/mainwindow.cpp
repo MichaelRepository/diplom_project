@@ -137,6 +137,7 @@ MainWindow::MainWindow(QWidget *parent) :
     Status_search_bt->                  setToolTip("Выбрать поле для поиска");
     ui->Create_Report_bt1->             setToolTip("Создать отчет");
     ui->Refresh_button2->               setToolTip("Обновить таблицу шаблонов");
+    ui->Export_button1->                setToolTip("Экспорт данных таблицы в файл .odt");
 }
 
 MainWindow::~MainWindow()
@@ -168,7 +169,7 @@ void MainWindow::initTables()
         dbmessdlg.setAdditionText("Приложение будет закрыто");
         dbmessdlg.showdbmess(metadatasource->lastQueryError());
         exit(0);
-    }
+    }  
 
 /// создание таблиц
     residencetable   = new MyTable(metadatasource, connectionname);
@@ -269,6 +270,37 @@ void MainWindow::initTables()
     search_menu_for_group->actions().at(2)->setChecked(true);
     search_menu_for_stud ->actions().at(2)->setChecked(true);
 
+/// меню для дополнительных таблиц
+    act_group_for_tables         = new QActionGroup(this);
+    act_group_for_tables->setExclusive(true);
+
+    act_citizen_table            = new QAction("Гражданство",       act_group_for_tables);
+    act_school_table             = new QAction("Уч. заведения",     act_group_for_tables);
+    act_typeducation_table       = new QAction("Тип образования",   act_group_for_tables);
+    act_typeschool_table         = new QAction("Тип уч. заведений", act_group_for_tables);
+    act_privilegescategory_table = new QAction("Категории льгот",   act_group_for_tables);
+
+    act_citizen_table->             setCheckable(true);
+    act_school_table->              setCheckable(true);
+    act_typeducation_table->        setCheckable(true);
+    act_typeschool_table->          setCheckable(true);
+    act_privilegescategory_table->  setCheckable(true);
+
+    act_citizen_table->             setData(QVariant(CITIZENSHIP) );
+    act_school_table->              setData(QVariant(SCHOOL) );
+    act_typeducation_table->        setData(QVariant(TYPEEDUCATION) );
+    act_typeschool_table->          setData(QVariant(TYPESCHOOL));
+    act_privilegescategory_table->  setData(QVariant(PRIVILEGESCATEGORY) );
+
+    ui->Switch_table_addition_button->addAction(act_citizen_table);
+    ui->Switch_table_addition_button->addAction(act_school_table);
+    ui->Switch_table_addition_button->addAction(act_typeducation_table);
+    ui->Switch_table_addition_button->addAction(act_typeschool_table);
+    ui->Switch_table_addition_button->addAction(act_privilegescategory_table);
+    ui->Switch_table_addition_button->setPopupMode(QToolButton::InstantPopup);
+
+    connect(ui->Switch_table_addition_button, &QToolButton::triggered,
+            this,                             &MainWindow:: set_additionally_table);
 
 /// ВАЖНО - установка глобальной таблицы
     dlgrecordedit   = new DialogEditRecord(connectionname, this);
@@ -278,6 +310,7 @@ void MainWindow::initTables()
     tablemodel      = new MyTableModel(this);
     subtablemodel   = new MyTableModel(this);
     globaltable     = specialitytable;
+
     qDebug() << "tables end init:" << QDateTime::currentDateTimeUtc().toString("hh:mm:ss zzz");
 }
 
@@ -361,7 +394,7 @@ void MainWindow::init_sys()
     initTables();                                                               /// ИНИЦИАЛИЗАЦИЯ ТАБЛИЦ
     set_current_table(SPECIALITY);                                              /// установить текущую таблицу
 
-    /// получение щаблонов отчетов
+    /// получение шаблонов отчетов
     reportstablemodel = new QSqlTableModel(this);                               /// модель данных для оторажения таблицы шаблонов
     getReportTemplatesTable();
 
@@ -379,19 +412,31 @@ void MainWindow::refresh_menu()
     /// переключить состояние кнопок панели меню, зависимых от активной таблицы
     switch (currenttable){
     case SPECIALITY:
-        ui->Switch_table_spec_button->setChecked(true);
         Status_label_curtable->setText("Таблица: Специальность ");
         Status_search_bt->setMenu(search_menu_for_spec);
         break;
     case GROUP:
-        ui->Switch_table_group_button->setChecked(true);
         Status_label_curtable->setText("Таблица: Группа ");
         Status_search_bt->setMenu(search_menu_for_group);
         break;
     case STUDENT:
-        ui->Switch_table_stud_button->setChecked(true);
         Status_label_curtable->setText("Таблица: Студент ");
         Status_search_bt->setMenu(search_menu_for_stud);
+        break;
+    case CITIZENSHIP:
+        Status_label_curtable->setText("Таблица: Гражданство ");
+        break;
+    case PRIVILEGESCATEGORY:
+        Status_label_curtable->setText("Таблица: Льготы ");
+        break;
+    case SCHOOL:
+        Status_label_curtable->setText("Таблица: Уч. заведения ");
+        break;
+    case TYPESCHOOL:
+        Status_label_curtable->setText("Таблица: Типы уч. заведений ");
+        break;
+    case TYPEEDUCATION:
+        Status_label_curtable->setText("Таблица: Тип образования ");
         break;
     }
     /// определить число выделенных записей активной таблицы
@@ -419,16 +464,40 @@ void MainWindow::set_current_table(Tables table)
     /// формирование запросов, относительно текущей таблицы
     switch(table){
     case SPECIALITY:
+        ui->Switch_table_spec_button->setChecked(true);
         if(!refresh_table(specialitytable) ) return ;
         globaltable = specialitytable;
         break;
     case GROUP:
+        ui->Switch_table_group_button->setChecked(true);
         if(!refresh_table(grouptable) ) return ;
         globaltable = grouptable;
         break;
     case STUDENT:
+        ui->Switch_table_stud_button->setChecked(true);
         if(!refresh_table(studenttable) ) return ;
         globaltable = studenttable;
+        break;
+    case CITIZENSHIP:
+        ui->Switch_table_addition_button->setChecked(true);
+        if(!citizenshiptable->updateData() ) return ;
+        globaltable = citizenshiptable;
+        break;
+    case PRIVILEGESCATEGORY:
+        ui->Switch_table_addition_button->setChecked(true);
+        return ;
+        break;
+    case SCHOOL:
+        ui->Switch_table_addition_button->setChecked(true);
+        return ;
+        break;
+    case TYPESCHOOL:
+        ui->Switch_table_addition_button->setChecked(true);
+        return ;
+        break;
+    case TYPEEDUCATION:
+        ui->Switch_table_addition_button->setChecked(true);
+        return ;
         break;
     }
 
@@ -450,6 +519,14 @@ void MainWindow::set_current_table(Tables table)
     globalsubtable = 0;
     refresh_table(globaltable);
     refresh_menu();
+}
+
+void MainWindow::set_additionally_table(QAction *action)
+{
+    ui->Switch_table_addition_button->setText(action->text() );
+    ui->Switch_table_addition_button->setChecked(true);
+    Tables table = Tables(action->data().toInt() );
+    set_current_table(table);
 }
 
 void MainWindow::on_tableView_doubleClicked(const QModelIndex &index)
@@ -856,6 +933,70 @@ void MainWindow::createReport()
     this->activateWindow();
 }
 
+void MainWindow::exportInDoc()
+{
+    QList<int> columns;
+    QStringList fieldsname;
+    for(int i = 0; i < header->count(); ++i)
+    {
+        if(!header->isSectionHidden(i) )
+        {
+            columns << i;
+            fieldsname << tablemodel->headerData(i,Qt::Horizontal).toString();
+        }
+    }
+    columns = globaltable->fieldsIndexOfColumns(columns);
+    QSqlQuery querydata = globaltable->getTableQueryData();
+
+    MyDocumentODF report;
+    report.setConnectionName(connectionname);
+
+    if(!report.createDocumentFrom(querydata, fieldsname, columns ) )
+    {
+        if(report.isError())
+        {
+            QMessageBox mess;
+            mess.setWindowTitle("Ошибка построения отчета");
+            mess.setText("Произошла ошибка в процессе построения отчета.");
+            mess.setIcon(QMessageBox::Critical);
+            mess.addButton(QMessageBox::Ok);
+            mess.setButtonText(QMessageBox::Ok, "Ясно");
+            mess.exec();
+        }
+        else
+        {
+            QMessageBox mess;
+            mess.setWindowTitle("Отмена");
+            mess.setText("Действие отменено. Отчет не создан.");
+            mess.setIcon(QMessageBox::Information);
+            mess.addButton(QMessageBox::Ok);
+            mess.setButtonText(QMessageBox::Ok, "Ясно");
+            mess.exec();
+        }
+        return ;
+    }
+
+    QFileDialog filedlg;
+    QString newfile = filedlg.getSaveFileName(0,"Сохранение файла","","ODT files (*.odt)");
+    this->activateWindow();
+    if(newfile.isEmpty() ) return;
+    report.saveDocumentCopy(newfile);
+    QDesktopServices serv;
+
+    if(!serv.openUrl(QUrl::fromLocalFile(newfile)) )
+    {
+        QMessageBox mess;
+        mess.setWindowTitle("Ошибка построения отчета");
+        mess.setText("Произошла ошибка в процессе построения отчета.");
+        mess.setIcon(QMessageBox::Critical);
+        mess.addButton(QMessageBox::Ok);
+        mess.setButtonText(QMessageBox::Ok, "Ясно");
+        mess.exec();
+        return ;
+    }
+    this->activateWindow();
+}
+
 void MainWindow::createFilterForSelectedRecords()
 {
     QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
@@ -1077,4 +1218,9 @@ void MainWindow::on_Refresh_button2_clicked()
 void MainWindow::on_Create_Report_bt1_clicked()
 {
     createReport();
+}
+
+void MainWindow::on_Export_button1_clicked()
+{    
+    exportInDoc();
 }

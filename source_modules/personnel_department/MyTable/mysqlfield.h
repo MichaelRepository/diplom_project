@@ -1,13 +1,24 @@
 #ifndef MYSQLFIELD_H
 #define MYSQLFIELD_H
 
-#include "myinfoscheme.h"
+#include <QObject>
+#include <QtSql>
+#include <QDebug>
+
+class MyDataOfKey{
+public:
+    QString table;              /// таблица которая ссылается   (slave)
+    QString referencedtable;    /// таблица на которую сслаются (master)
+    QString foreignkey;         /// внешний ключ
+    QString primarykey;         /// первичный ключ
+};
 
 class MyField;
 
 class MySubtable{
 public:
     QString                 name;                                               /// имя
+    QString                 altername;
     QList<MyField*>         fields;                                             /// указатели на поля (сами поля хранятся списком в объекте - таблица)
     QString                 primarykey;                                         /// ключевое поле
     /// внешние ключи, связывающие текущую субтаблицу с другими
@@ -41,7 +52,7 @@ public:
     QString name;                                                               /// имя
     QString altername;                                                          /// псевдоним
     QString validator;                                                          /// валидатор
-    QString alterfield;                                                         /// альтернативное поле (отображаемое вместо него)
+    QString alterfield;                                                         /// альтернативное поле (отображаемое вместо текущего поля)
     QString realtype;                                                           ///
     bool    isEditable;                                                         /// признак редактируемости
     bool    isVisible;                                                          /// признак видимости в вьювере

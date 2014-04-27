@@ -44,14 +44,22 @@ QVariant MyTableModel::data(const QModelIndex &index, int role) const
     if (!index.isValid())
         return QVariant();
 
-    bool isForeign = table->displayedFieldIsForeign(index.column());
-    bool isPrimary = table->displayedFieldIsPrimary(index.column());
-    bool isLink    = table->displayedFieldIsLink(index.column());
+    bool isForeign  = table->displayedFieldIsForeign(index.column() );
+    bool isPrimary  = table->displayedFieldIsPrimary(index.column() );
+    bool isLink     = table->displayedFieldIsLink(index.column() );
+    QString realtype = table->displayFieldRealType(index.column() );
 
     switch (role) {
-    case Qt::DisplayRole:
-            return (table->displayCellValue(index.row(), index.column()) );
-
+    case Qt::DisplayRole:{
+        QVariant cellvalue = table->displayCellValue(index.row(), index.column());
+        if(realtype == "TINYINT")
+        {
+            if(cellvalue.toBool()) return "да";
+            else return "нет";
+        }
+        else
+            return cellvalue;
+    }
     case Qt::DecorationRole:
         if(isForeign) return icoFKey;
         if(isPrimary) return icoPKey;

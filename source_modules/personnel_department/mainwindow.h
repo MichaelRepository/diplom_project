@@ -36,13 +36,14 @@
 #include "QuaZIP/quazipfile.h"
 #include "MyReport/mydocumentodf.h"
 
-enum Tables{SPECIALITY, GROUP, STUDENT};                                        /// список основных таблиц
-
-/*enum extraTables{CITIZENSHIPLIST,
- * PRIVILEGESCATEGORY,
- * SCHOOL,
- * TYPESCHOOL,
- * TYPEEDUCATION};*/
+enum Tables{SPECIALITY,
+            GROUP,
+            STUDENT,
+            CITIZENSHIP,
+            PRIVILEGESCATEGORY,
+            SCHOOL,
+            TYPESCHOOL,
+            TYPEEDUCATION};
 
 namespace Ui {
 class MainWindow;
@@ -50,8 +51,7 @@ class MainWindow;
 
 class MainWindow : public QMainWindow
 {
-    Q_OBJECT
-    
+    Q_OBJECT    
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
@@ -62,6 +62,7 @@ public:
 private slots:
     void refresh_menu();                                                        /// обновить меню
     void set_current_table(Tables table);                                       /// установить таблицу
+    void set_additionally_table(QAction* action);
 
     /// слоты - обработчики событий виджетов
     void on_Switch_table_spec_button_clicked();
@@ -98,6 +99,8 @@ private slots:
     void on_Refresh_button2_clicked();
     void on_Create_Report_bt1_clicked();
 
+    void on_Export_button1_clicked();
+
 private:
     void initTables();
     void add_new_record (MyTable *table);                                       /// добавить новую запись
@@ -106,9 +109,10 @@ private:
     bool refresh_table  (MyTable *table);
 
     void getReportTemplatesTable();                                             /// запросить данне с шаблонов для текущего пользователя
+    void createReport();
+    void exportInDoc();
     void templatSelected(const QModelIndex &current,
                          const QModelIndex &previous);
-    void createReport();
 
     void createFilterForSelectedRecords();
     void createFilterForUnSelectedRecords();
@@ -145,6 +149,7 @@ private:
     int                     userid;                                             /// идентификатор пользователя
     QString                 connectionname;                                     /// имя для получения подключения к СУБД
     Tables                  currenttable;                                       /// активная таблица
+    Tables                  currentadditiontable;
     /// источник метаданных
     MyInfoScheme* metadatasource;
     /// модель данных для отобраения таблицы
@@ -155,11 +160,20 @@ private:
     MyTable *globaltable;                                                       /// глобальный указатель на текущую главную таблицу
     MyTable *globalsubtable;                                                    /// глобальный указатель на текущую субтаблицу
     /// указатели на реальные объекты
+    /// основные таблицы
     MyTable* specialitytable;
     MyTable* grouptable;
     MyTable* studenttable;
+    /// дополнительно
     MyTable* citizenshiptable;
     MyTable* residencetable;
+    /// группа  действий для вызова дополнительных таблиц
+    QActionGroup * act_group_for_tables;
+    QAction* act_citizen_table;
+    QAction* act_school_table;
+    QAction* act_typeducation_table;
+    QAction* act_typeschool_table;
+    QAction* act_privilegescategory_table;
 
     /// данные для поискового элемента
     QMap<QString, QString> search_data_for_spec;

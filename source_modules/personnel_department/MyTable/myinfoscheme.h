@@ -5,13 +5,7 @@
 #include <QtSql>
 #include <QDebug>
 
-class MyDataOfKey{
-public:
-    QString table;              /// таблица которая ссылается   (slave)
-    QString referencedtable;    /// таблица на которую сслаются (master)
-    QString foreignkey;         /// внешний ключ
-    QString primarykey;         /// первичный ключ
-};
+#include "mysqlfield.h"
 
 class MyInfoScheme: QObject
 {
@@ -19,6 +13,7 @@ class MyInfoScheme: QObject
 
 public:
     MyInfoScheme(const QString &connectname,   QObject *parent = 0);
+    bool getDataForFields(QList<MyField> &fields);
     QString getAlterName (const QString &table, const QString &field);          /// получить альтернативное имя поля
     QString getValidator (const QString &table, const QString &field);
     QString getAlterField(const QString &table, const QString &field);          /// получить имя альтернативного поля (значение и имя которого будут выводится в РЕДАКТОРЕ!)
@@ -30,7 +25,13 @@ public:
     bool tableIsValid(QString table);
     bool isError();
     QSqlError lastQueryError();
+
+    QString getAlterNameForTable(const QString& tablename);
+
 private:
+
+    int indexFieldOf(QString table, QString field, QList<MyField> &fields) const;
+
     bool error;
     QSqlError  sqlerror;
     QSqlQuery* query;

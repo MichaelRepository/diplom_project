@@ -87,7 +87,7 @@ bool MySqlRecord::isForeign(int i)
 QString MySqlRecord::alterNameOfField(int i)
 {
     if(i >= 0 && i <fields.size())
-        return fields[i]->altername;
+        return fields[i]->altername.isEmpty() ? fields[i]->name : fields[i]->altername;
     return QString();
 }
 
@@ -124,6 +124,13 @@ MyDataReference MySqlRecord::referenceDataOfField(int i)
     if(i >= 0 && i <fields.size())
         return fields[i]->reference;
     return MyDataReference();
+}
+
+QStringList MySqlRecord::getEnumVariants(int i) const
+{
+    if(i >= 0 && i <fields.size())
+        return fields[i]->variantsforenum;
+    return QStringList();
 }
 
 void MySqlRecord::setValue(int i, const QVariant &val)

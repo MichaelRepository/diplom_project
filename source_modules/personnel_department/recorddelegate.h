@@ -19,6 +19,7 @@
 #include <QDateEdit>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QComboBox>
 #include <QRegExpValidator>
 #include <QMap>
 
@@ -40,26 +41,24 @@ class DelegatButton : public QPushButton
 {
     Q_OBJECT
 public:
-    DelegatButton(int fieldnum,
-                  MySqlRecord    *record,
+    DelegatButton(const QModelIndex& _index,
                   QSqlQueryModel *model,
                   QWidget *parent):
         QPushButton(parent)
     {
-        index = fieldnum;
-        recorddata = record;
+        index = _index;
         querymodel = model;
         subtableshov = false;
         subtabledlg  = new SubTableWidget(this);
-        subtabledlg->setTableModel(model);
+        subtabledlg->setTableModel(querymodel);
         subtabledlg->setDisplayMode(false,false,false,Qt::NoFocus);
         QObject::connect(subtabledlg, &SubTableWidget::newrowselected,
                          this,        &DelegatButton:: update);
 
         /// позиционирование на текущей строке субтаблицы
         int row = 0;
-        QString rv = recorddata->value(index).toString().toUpper();
-        QSqlQuery query = model->query();
+        QString rv = index.data(Qt::DisplayRole).toString().toUpper();
+        QSqlQuery query = querymodel->query();
         query.first();
         do
         {
@@ -68,7 +67,6 @@ public:
             ++row;
         }
         while(query.next());
-        subtabledlg->setRow(row);
         update(row);
     }
 
@@ -113,55 +111,57 @@ public:
     }
 
     void setcurrentrow(int row){subtablecurrentrow = row; subtabledlg->setRow(row);}
+    QVariant realValue ()const  {return realvalue; }
+    QVariant alterValue()const  {return altervalue.isNull() ? realvalue : altervalue; }
 
 private slots:
     void update(int row)
     {
         subtablecurrentrow = row;
-        querymodel->query().seek(subtablecurrentrow);
+        if(!querymodel->query().seek(subtablecurrentrow) )
+            subtablecurrentrow = 0;
 
-        QString  alterfield = recorddata->alterField(index);
-        QVariant value      = querymodel->query().value(0);
-        QVariant altervalue;
-        recorddata->setValue (index, value);
+        subtabledlg->setRow(subtablecurrentrow);
+
+        QString  alterfield = index.data(Qt::UserRole+4).toString();
+        realvalue = querymodel->query().value(0);
         if(!alterfield.isEmpty() )
         {
             altervalue = querymodel->query().value(alterfield);
-            recorddata->setAlterData(index, altervalue);
+            this->setText(altervalue.toString());
         }
-
-        if(!alterfield.isEmpty()) this->setText(altervalue.toString());
-        else this->setText(value.toString());
+        else this->setText(realvalue.toString());
 
         this->repaint();
     }
+
 private:
-    int index;                   /// номер текущего поля
+    QModelIndex index;
     SubTableWidget *subtabledlg; /// окно для отображения слинкованной таблицы
     QSqlQueryModel *querymodel;  /// модель, отображаемая в окне
-    MySqlRecord    *recorddata;
     bool subtableshov;           /// состояние видимости окна
     int  subtablecurrentrow;     /// текущая выделенная строка в слинкованной таблице
+
+    QVariant realvalue;
+    QVariant altervalue;
 };
 
 class RecordDelegate : public QStyledItemDelegate
 {
 public:
-    RecordDelegate(QString connectname, MySqlRecord *record, QObject * parent = 0);
+    RecordDelegate(QString connectname, QObject * parent = 0);
     ~ RecordDelegate();
-
-    void initDelegate();/// инициализация данных
 
     QWidget *createEditor(QWidget * parent, const QStyleOptionViewItem & option,/// метод создает редактор для каждого элемента модели
                           const QModelIndex & index) const;
     void	 setEditorData(QWidget * editor, const QModelIndex & index) const;  /// передает в редактор данные из модели
-    void	 setModelData(QWidget * editor, QAbstractItemModel * model,         /// пердает данные из редактора в модель
+    void	 setModelData(QWidget * editor, QAbstractItemModel * model,         /// передает данные из редактора в модель
                           const QModelIndex & index) const;
-    void	paint(QPainter * painter, const QStyleOptionViewItem & option,
-                  const QModelIndex & index) const;
+    void	 paint(QPainter * painter, const QStyleOptionViewItem & option,
+                   const QModelIndex & index) const;
+
 private:
-   MySqlRecord*  recorddata;
-   QMap<int,QSqlQueryModel*> querylist; /// запросы на получение данных суб таблиц
+   QMap<int, QSqlQueryModel*> * querylist; /// запросы на получение данных суб таблиц
    QString connectionname;
 };
 

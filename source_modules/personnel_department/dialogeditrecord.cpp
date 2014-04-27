@@ -19,6 +19,7 @@ DialogEditRecord::DialogEditRecord(QString connectname, QWidget *parent) :
                                   QAbstractItemView::SelectedClicked|
                                   QAbstractItemView::DoubleClicked  |
                                   QAbstractItemView::EditKeyPressed);
+    delegate = 0;
 }
 
 DialogEditRecord::~DialogEditRecord()
@@ -31,10 +32,10 @@ void DialogEditRecord::setRecord(MySqlRecord *record)
     recorddata = record;
     recordmodel->setRecordData(recorddata);
     ui->treeView -> setModel(recordmodel);
-
-    /// создание и привязка делегата
-    RecordDelegate* delegate = new RecordDelegate(connectionname, recorddata, this);
-    delegate->initDelegate();
+    /// очистить старые данные делегата
+    if(delegate) delete delegate;
+    /// создание и привязка нового делегата
+    delegate = new RecordDelegate(connectionname, this);
     ui->treeView->setItemDelegate(delegate);
     ui->treeView->resizeColumnToContents(0);
 }

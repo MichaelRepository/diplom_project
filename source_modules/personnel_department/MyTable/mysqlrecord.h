@@ -31,6 +31,7 @@ public:
     QString alterField(int i);
     QVariant alterData(int i);
     MyDataReference referenceDataOfField(int i);
+    QStringList getEnumVariants(int i) const ;
 
     void setValue       (int i, const QVariant& val);
     void setValue       (const QString& name, const QVariant& val);

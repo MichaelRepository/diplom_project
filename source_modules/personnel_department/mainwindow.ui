@@ -39,13 +39,16 @@
     <property name="spacing">
      <number>5</number>
     </property>
-    <item row="1" column="0">
+    <item row="2" column="0">
      <widget class="QStackedWidget" name="stackedWidget">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="styleSheet">
+       <string notr="true"/>
       </property>
       <property name="currentIndex">
        <number>0</number>
@@ -67,13 +70,65 @@
         <property name="spacing">
          <number>5</number>
         </property>
+        <item row="1" column="0" colspan="3">
+         <widget class="QTableView" name="tableView">
+          <property name="styleSheet">
+           <string notr="true">QAbstractItemView:item::selected{color:#fff;background-color: #4586D8;}</string>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Sunken</enum>
+          </property>
+          <property name="editTriggers">
+           <set>QAbstractItemView::NoEditTriggers</set>
+          </property>
+          <property name="alternatingRowColors">
+           <bool>true</bool>
+          </property>
+          <property name="selectionMode">
+           <enum>QAbstractItemView::ExtendedSelection</enum>
+          </property>
+          <property name="selectionBehavior">
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="sortingEnabled">
+           <bool>false</bool>
+          </property>
+          <property name="cornerButtonEnabled">
+           <bool>false</bool>
+          </property>
+          <attribute name="horizontalHeaderCascadingSectionResizes">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderVisible">
+           <bool>false</bool>
+          </attribute>
+          <attribute name="verticalHeaderShowSortIndicator" stdset="0">
+           <bool>false</bool>
+          </attribute>
+         </widget>
+        </item>
         <item row="0" column="0" colspan="3">
-         <widget class="QFrame" name="frame_3">
+         <widget class="QFrame" name="frame_2">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
             <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
+            <verstretch>30</verstretch>
            </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>30</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>30</height>
+           </size>
           </property>
           <property name="frameShape">
            <enum>QFrame::StyledPanel</enum>
@@ -81,7 +136,7 @@
           <property name="frameShadow">
            <enum>QFrame::Raised</enum>
           </property>
-          <layout class="QGridLayout" name="gridLayout_4">
+          <layout class="QGridLayout" name="gridLayout_8">
            <property name="leftMargin">
             <number>0</number>
            </property>
@@ -94,47 +149,6 @@
            <property name="bottomMargin">
             <number>0</number>
            </property>
-           <item row="0" column="4">
-            <widget class="QToolButton" name="Filter_checked_button">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>25</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>25</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string/>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/svg/filter-icon.svg</normaloff>:/svg/filter-icon.svg</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
            <item row="0" column="0">
             <widget class="QToolButton" name="Switch_table_spec_button">
              <property name="minimumSize">
@@ -165,62 +179,8 @@
              <property name="checkable">
               <bool>true</bool>
              </property>
-             <property name="autoExclusive">
-              <bool>true</bool>
-             </property>
-             <property name="toolButtonStyle">
-              <enum>Qt::ToolButtonTextBesideIcon</enum>
-             </property>
-             <property name="autoRaise">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="3">
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>349</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item row="0" column="2">
-            <widget class="QToolButton" name="Switch_table_stud_button">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Студенты</string>
-             </property>
-             <property name="icon">
-              <iconset resource="../../resfile/src.qrc">
-               <normaloff>:/png/table_.png</normaloff>:/png/table_.png</iconset>
-             </property>
-             <property name="iconSize">
-              <size>
-               <width>16</width>
-               <height>16</height>
-              </size>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
              <property name="checked">
-              <bool>true</bool>
+              <bool>false</bool>
              </property>
              <property name="autoExclusive">
               <bool>true</bool>
@@ -277,47 +237,149 @@
              </property>
             </widget>
            </item>
+           <item row="0" column="2">
+            <widget class="QToolButton" name="Switch_table_stud_button">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Студенты</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../../resfile/src.qrc">
+               <normaloff>:/png/table_.png</normaloff>:/png/table_.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>16</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+             <property name="autoExclusive">
+              <bool>true</bool>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonTextBesideIcon</enum>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="3">
+            <widget class="QToolButton" name="Switch_table_addition_button">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>25</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Дополнительно</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../../resfile/src.qrc">
+               <normaloff>:/png/table_.png</normaloff>:/png/table_.png</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>16</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <property name="autoExclusive">
+              <bool>true</bool>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonTextBesideIcon</enum>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="4">
+            <spacer name="horizontalSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+           <item row="0" column="5">
+            <widget class="QToolButton" name="Filter_checked_button">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>20</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>20</width>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../../resfile/src.qrc">
+               <normaloff>:/svg/filter-icon.svg</normaloff>:/svg/filter-icon.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>16</width>
+               <height>16</height>
+              </size>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>true</bool>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
           </layout>
-         </widget>
-        </item>
-        <item row="1" column="0" colspan="3">
-         <widget class="QTableView" name="tableView">
-          <property name="styleSheet">
-           <string notr="true">QAbstractItemView:item::selected{color:#fff;background-color: #4586D8;}</string>
-          </property>
-          <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
-          </property>
-          <property name="frameShadow">
-           <enum>QFrame::Sunken</enum>
-          </property>
-          <property name="editTriggers">
-           <set>QAbstractItemView::NoEditTriggers</set>
-          </property>
-          <property name="alternatingRowColors">
-           <bool>true</bool>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::ExtendedSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="sortingEnabled">
-           <bool>false</bool>
-          </property>
-          <property name="cornerButtonEnabled">
-           <bool>false</bool>
-          </property>
-          <attribute name="horizontalHeaderCascadingSectionResizes">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="verticalHeaderShowSortIndicator" stdset="0">
-           <bool>false</bool>
-          </attribute>
          </widget>
         </item>
        </layout>
@@ -592,9 +654,9 @@ QTabBar::tab:selected {
          </property>
          <widget class="QWidget" name="tab_2">
           <attribute name="title">
-           <string>Правка</string>
+           <string>Главная</string>
           </attribute>
-          <layout class="QHBoxLayout" name="horizontalLayout">
+          <layout class="QGridLayout" name="gridLayout_4">
            <property name="leftMargin">
             <number>0</number>
            </property>
@@ -607,7 +669,10 @@ QTabBar::tab:selected {
            <property name="bottomMargin">
             <number>0</number>
            </property>
-           <item>
+           <property name="spacing">
+            <number>5</number>
+           </property>
+           <item row="0" column="0">
             <widget class="QToolButton" name="Edit_button1">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -645,7 +710,7 @@ QTabBar::tab:selected {
              </property>
             </widget>
            </item>
-           <item>
+           <item row="0" column="1">
             <widget class="QToolButton" name="Add_button1">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -683,7 +748,7 @@ QTabBar::tab:selected {
              </property>
             </widget>
            </item>
-           <item>
+           <item row="0" column="2">
             <widget class="QToolButton" name="Delete_button1">
              <property name="sizePolicy">
               <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
@@ -721,7 +786,7 @@ QTabBar::tab:selected {
              </property>
             </widget>
            </item>
-           <item>
+           <item row="0" column="3">
             <widget class="QToolButton" name="Refresh_button1">
              <property name="enabled">
               <bool>true</bool>
@@ -762,7 +827,7 @@ QTabBar::tab:selected {
              </property>
             </widget>
            </item>
-           <item>
+           <item row="0" column="4">
             <spacer name="horizontalSpacer_2">
              <property name="orientation">
               <enum>Qt::Horizontal</enum>
@@ -775,6 +840,47 @@ QTabBar::tab:selected {
              </property>
             </spacer>
            </item>
+           <item row="0" column="5">
+            <widget class="QToolButton" name="Export_button1">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="text">
+              <string>Обновить</string>
+             </property>
+             <property name="icon">
+              <iconset resource="../../resfile/src.qrc">
+               <normaloff>:/svg/export_in_document.svg</normaloff>:/svg/export_in_document.svg</iconset>
+             </property>
+             <property name="iconSize">
+              <size>
+               <width>32</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="autoExclusive">
+              <bool>false</bool>
+             </property>
+             <property name="popupMode">
+              <enum>QToolButton::DelayedPopup</enum>
+             </property>
+             <property name="toolButtonStyle">
+              <enum>Qt::ToolButtonIconOnly</enum>
+             </property>
+             <property name="autoRaise">
+              <bool>true</bool>
+             </property>
+             <property name="arrowType">
+              <enum>Qt::NoArrow</enum>
+             </property>
+            </widget>
+           </item>
           </layout>
          </widget>
          <widget class="QWidget" name="tab_3">
@@ -782,7 +888,7 @@ QTabBar::tab:selected {
            <bool>true</bool>
           </property>
           <attribute name="title">
-           <string>Фильтрация</string>
+           <string>Фильтр</string>
           </attribute>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
            <property name="leftMargin">
@@ -1064,10 +1170,6 @@ QTabBar::tab:selected {
  <layoutdefault spacing="6" margin="11"/>
  <tabstops>
   <tabstop>tableView</tabstop>
-  <tabstop>Switch_table_spec_button</tabstop>
-  <tabstop>Switch_table_group_button</tabstop>
-  <tabstop>Switch_table_stud_button</tabstop>
-  <tabstop>Filter_checked_button</tabstop>
   <tabstop>Edit_button1</tabstop>
   <tabstop>Add_button1</tabstop>
   <tabstop>Delete_button1</tabstop>

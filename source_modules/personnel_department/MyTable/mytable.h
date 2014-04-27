@@ -46,6 +46,7 @@ public:
     QString  displayFieldName       (int index) const;                          /// получить имя поля
     QVariant displayCellValue       (int row, int col);                         /// получить значение ячейки таблицы
     QVariant displayFieldValue      (int row, const QString& field);
+    QString  displayFieldRealType   (int index);
     bool     displayedFieldIsForeign(int index) const;                          /// проверка на поле-внешний ключ
     bool     displayedFieldIsPrimary(int index) const;                          /// проверка на поле-превичный ключ
     bool     displayedFieldIsLink   (int index) const;                          /// проверка на поле-ссылку
@@ -80,8 +81,12 @@ public:
     void setCustomOrderData(int column, QString data);
     void clearCustomOrdersData();
 
+    QSqlQuery  getTableQueryData() const;
+    QList<int> fieldsIndexOfColumns(const QList<int> &columns) const;
+
 private:
     int  fieldRealIndexOf(QString field) const;                                 /// получить реальный индекс поля по имени
+    int  fieldRealIndexOf(int col) const;
     int  fieldViewIndexOf(QString field) const;                                 /// получить номер поля в вьювере по имени
     int  tableIndexOf    (QString table) const;                                 /// получить индекс субтаблицы
 

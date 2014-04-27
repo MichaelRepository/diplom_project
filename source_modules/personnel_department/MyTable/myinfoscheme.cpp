@@ -17,6 +17,66 @@ MyInfoScheme::MyInfoScheme(const QString &connectname, QObject *parent) :
     error  = false;
 }
 
+bool MyInfoScheme::getDataForFields(QList<MyField> &fields)
+{
+    if(fields.isEmpty() ) return false;
+    QString querytext =
+            "SELECT "
+                "information_schema.COLUMNS.TABLE_NAME, "
+                "information_schema.COLUMNS.COLUMN_NAME, "
+                "information_schema.COLUMNS.COLUMN_COMMENT,"
+                "information_schema.COLUMNS.DATA_TYPE, "
+                "information_schema.COLUMNS.COLUMN_TYPE, "
+                +dbname+".extenddataforfield.alterfield, "
+                +dbname+".extenddataforfield.regex "
+            "FROM information_schema.COLUMNS "
+                "LEFT JOIN "+dbname+".extenddataforfield "
+                    " ON ("+dbname+".extenddataforfield.tablename = information_schema.COLUMNS.TABLE_NAME"
+                    " AND " +dbname+".extenddataforfield.fieldname = information_schema.COLUMNS.COLUMN_NAME) "
+            "WHERE TABLE_SCHEMA = '"+dbname+"' AND (";
+    QList<MyField>::const_iterator itr;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
+    {
+        if(itr != fields.begin() ) querytext += " OR ";
+        querytext += " (TABLE_NAME = '"  +(*itr).table->name+"'"+
+                     " AND COLUMN_NAME = '" +(*itr).name+"' ) ";
+    }
+    querytext += " )";
+
+    query->prepare(querytext);
+    if(!query->exec() )
+    {
+        sqlerror = query->lastError();
+        error = true;
+        return false;
+    }
+    error = false;
+    if(query->size() == 0){return false;}
+
+    while (query->next() )
+    {
+       QString table = query->value(0).toString();
+       QString field = query->value(1).toString();
+       int index = indexFieldOf(table, field, fields);
+       if(index == -1) return false;
+       MyField* curfield = & fields[index];
+       curfield->altername    = query->value(2).toString();
+       curfield->realtype     = query->value(3).toString().toUpper();
+       curfield->alterfield   = query->value(5).toString();
+       curfield->validator    = query->value(6).toString();
+
+       if(curfield->realtype == "ENUM")
+       {
+           QString coltypedata = query->value(4).toString();
+           coltypedata = coltypedata.remove(QRegExp("(enum\\()|(\\))|\\'",Qt::CaseInsensitive) );
+           //qDebug() << coltypedata;
+           curfield->variantsforenum = coltypedata.split(',');
+       }
+    }
+
+    return true;
+}
+
 QString MyInfoScheme::getAlterName(const QString &table, const QString &field)
 {
     query->prepare("SELECT COLUMN_COMMENT FROM information_schema.COLUMNS "
@@ -199,4 +259,36 @@ bool MyInfoScheme::isError()
 QSqlError MyInfoScheme::lastQueryError()
 {
     return sqlerror;
+}
+
+QString MyInfoScheme::getAlterNameForTable(const QString &tablename)
+{
+
+    query->prepare("SELECT TABLE_COMMENT FROM information_schema.TABLES "
+                   "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ");
+    query->bindValue(0, dbname);
+    query->bindValue(1, tablename);
+    if(!query->exec() )
+    {
+        sqlerror = query->lastError();
+        error = true;
+        return QString();
+    }
+    if(query->size() == 0) return QString();
+    query->first();
+    return query->value(0).toString();
+
+}
+
+int MyInfoScheme::indexFieldOf(QString table, QString field,
+                               QList<MyField> &fields) const
+{
+    QList<MyField>::const_iterator itr;
+    int index = 0;
+    for(itr = fields.begin(); itr != fields.end(); ++itr)
+    {
+        if((*itr).table->name == table && (*itr).name == field) return index;
+        ++ index;
+    }
+    return -1;
 }

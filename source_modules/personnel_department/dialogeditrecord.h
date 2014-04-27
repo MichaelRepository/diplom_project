@@ -34,6 +34,7 @@ private:
     MySqlRecord*  recorddata;
     EditRecordModel* recordmodel;
     QString connectionname;
+    RecordDelegate* delegate;
 };
 
 #endif // DIALOGEDITRECORD_H
