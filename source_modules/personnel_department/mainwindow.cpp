@@ -363,7 +363,7 @@ void MainWindow::init_sys()
     while(authorizedlg.exec() != 0 && userid == -1)
     {
         QSqlQuery query0(db);
-        query0.prepare("SELECT iduser FROM operators WHERE login = :login "
+        query0.prepare("SELECT iduser, type FROM operators WHERE login = :login "
                        "AND pass = :pass AND type = :type");
         query0.bindValue(":login", authorizedlg.userName());
         query0.bindValue(":pass",  authorizedlg.userPass());
@@ -385,8 +385,23 @@ void MainWindow::init_sys()
         }
         else if(query0.value(0).isValid())
         {
-            userid = query0.value(0).toInt();
-            break;
+            /// получение идентификаторов пользователя и группы
+            userid  = query0.value(0).toInt();
+            groupid = query0.value(1).toInt();
+            /* КАЖДОЕ КЛИЕНТСКОЕ ПРИЛОЖЕНИЕ СООТВЕТСВУЕТ СВОЕЙ ГРУППЕ ПОЛЬЗОВАТЕЛЕЙ */
+            if(groupid != 3)
+            {
+                QMessageBox messbox;
+                messbox.setIcon(QMessageBox::Warning);
+                messbox.setWindowTitle("Сообщение");
+                messbox.setText("Доступ закрыт!\n"
+                                "Вы не являетесь работником отдела кадров.");
+                messbox.addButton(QMessageBox::Ok);
+                messbox.setButtonText(QMessageBox::Ok,"ясно");
+                messbox.exec();
+            }
+            else
+                break;
         }
     }
     if(userid == -1) exit(0);
@@ -805,7 +820,7 @@ void MainWindow::getReportTemplatesTable()
                   "FROM reports, usersgroup "
                   "WHERE usersgroup.idgroup = reports.usergroup AND "
                   "usersgroup.idgroup = ?");
-    query.bindValue(0, userid);
+    query.bindValue(0, groupid);
 
     if(!query.exec() )
     {

@@ -147,6 +147,7 @@ private:
 
     /// служебные параметры и объекты
     int                     userid;                                             /// идентификатор пользователя
+    int                     groupid;                                            /// идентификатор группы пользователей
     QString                 connectionname;                                     /// имя для получения подключения к СУБД
     Tables                  currenttable;                                       /// активная таблица
     Tables                  currentadditiontable;
