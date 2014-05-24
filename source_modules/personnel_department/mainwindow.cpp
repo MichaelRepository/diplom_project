@@ -181,13 +181,12 @@ void MainWindow::initTables()
 /// подготовить таблицу - проживание
     residencetable->appendField("idresidence",    "residence", false, false);
     residencetable->appendField("postcode",       "residence", true, true);
-    residencetable->appendField("regionrepublic", "residence", true, true);
+    residencetable->appendField("region",         "residence", true, true);
     residencetable->appendField("area",           "residence", true, true);
     residencetable->appendField("city",           "residence", true, true);
     residencetable->appendField("locality",       "residence", true, true);
     residencetable->appendField("street",         "residence", true, true);
     residencetable->appendField("house",          "residence", true, true);
-    residencetable->appendField("corps",          "residence", true, true);
     residencetable->appendField("apartment",      "residence", true, true);
     residencetable->appendField("registered",     "residence", true, true);
     residencetable->appendField("subject",        "residence", false, false);
@@ -197,7 +196,6 @@ void MainWindow::initTables()
     specialitytable->appendField("abbreviation",     "speciality", true, true);
     specialitytable->appendField("specialityname",   "speciality", true, true);
     specialitytable->appendField("periodeducation",  "speciality", true, true);
-    specialitytable->appendField("basedon",          "speciality", true, true);
     specialitytable->appendField("specialization",   "speciality", true, true);
 
 /// подготовить таблицу - группы
@@ -207,6 +205,8 @@ void MainWindow::initTables()
     grouptable->appendField("yearformation","groups", true,  true);
     grouptable->appendField("form",         "groups", true,  true);
     grouptable->appendField("budget",       "groups", true,  true);
+    grouptable->appendField("course",       "groups", true,  true);
+    grouptable->appendField("basedon",      "groups", true,  true);
 
 /// подготовить таблицу - студенты
     studenttable->appendField("subject",          "student", false, true);
@@ -222,7 +222,14 @@ void MainWindow::initTables()
     studenttable->appendField("placebirth",       "subject", true,  true);
     studenttable->appendField("studentgroup",     "student", true,  false);
     studenttable->appendField("idsubject",        "subject", false, false);
-    studenttable->appendLink ("Проживание", "idsubject", "subject", residencetable);
+
+    studenttable->appendField("passnum",             "subject", true, true);
+    studenttable->appendField("passseries",          "subject", true, true);
+    studenttable->appendField("passcodedepartament", "subject", true, true);
+    studenttable->appendField("passissued",          "subject", true, true);
+    studenttable->appendField("passdateissue",       "subject", true, true);
+
+    studenttable->appendLink ("Проживание", "idsubject", "subject","", residencetable);
 
 /// подготовить таблицу - список гражданств
     citizenshiptable->appendField("idcitizenship",   "citizenshiplist", false, true);
@@ -601,9 +608,13 @@ void MainWindow::on_tableView_clicked(const QModelIndex &index)
     if(!key0_1val.isValid()) return;
     /// установить глобальную субтаблицу
     globalsubtable = link->table_1;
-    globalsubtable->createQuickFilter(link->key1_0, "=", key0_1val.toString());
+    globalsubtable->createQuickFilter(link->key1_0, "=", key0_1val.toString() );
     globalsubtable->setFilterActivity(true);
     globalsubtable->setCurrentRow(-1);
+
+    //!!! автоподставновка занчений красивое решение задачи добавления новой записи в слинкованной таблице:)
+    globalsubtable->appendAutoValue(link->key1_0, key0_1val);
+
     /**
         танец с бубном:
         >задача: необходимо получить координаты точки в которую
@@ -681,13 +692,13 @@ void MainWindow::add_new_record(MyTable *table)                                 
     }
 }
 
-void MainWindow::remove_records(MyTable *table)                                 /// удалить записи
+void MainWindow::remove_records(MyTable *table, bool assubtable)                /// удалить записи
 {
-    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
-    if(items.size() <= 0) return ;
     QList<int> rows;
-    QModelIndexList::const_iterator itri;
-    for(itri = items.begin(); itri != items.end(); ++itri) rows << (*itri).row();
+    if(assubtable)
+        rows = subtablewidget->selectedRows();
+    else
+        rows = this->selectedRows();
 
     QMessageBox mess;
     mess.setIcon(QMessageBox::Warning);
@@ -719,20 +730,18 @@ void MainWindow::remove_records(MyTable *table)                                 
     refresh_table(table);
 }
 
-void MainWindow::edit_records(MyTable *table)                                   /// изменить записи
+void MainWindow::edit_records(MyTable *table, bool assubtable)                  /// изменить записи
 {
-    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
     QList<int> rows;
+    if(assubtable)
+        rows = subtablewidget->selectedRows();
+    else
+        rows = this->selectedRows();
     /// два режима редактирования!
     /// 1. редактирование одной записи
     /// 2. редактирование группы записей
-    if(items.size() > 1)
-    {
-        QModelIndexList::const_iterator itri;
-        for(itri = items.begin(); itri != items.end(); ++itri)
-            rows << (*itri).row();
+    if(rows.size() > 1)
         dlgrecordedit->setRecord(table->getEmptyRecordForInsert() );
-    }
     else
         dlgrecordedit->setRecord(table->getRecord(table->getCurrentRowIndex() ) );
 
@@ -743,7 +752,7 @@ void MainWindow::edit_records(MyTable *table)                                   
         mess.setIcon(QMessageBox::Warning);
         mess.setText("Желаете применить изменения?\n"
                      "Количество изменяемых записей(строк):"+
-                     QString::number(items.size() ) );
+                     QString::number(rows.size() ) );
         mess.addButton(QMessageBox::Ok);
         mess.addButton(QMessageBox::Cancel);
         mess.setButtonText(QMessageBox::Ok, "Применить");
@@ -751,7 +760,7 @@ void MainWindow::edit_records(MyTable *table)                                   
         if(mess.exec() == QMessageBox::Cancel ) return  ;
 
         bool result;
-        if(items.size() > 1)
+        if(rows.size() > 1)
             result = table->setUpdateGroupOfRecords(rows);
         else
             result = table->setUpdateDataFields();
@@ -877,6 +886,15 @@ void MainWindow::templatSelected(const QModelIndex &current,
         ui->thumbLabel->setPixmap(map);
         ui->thumbLabel->setAlignment(Qt::AlignCenter);
     }
+}
+
+QList<int> MainWindow::selectedRows() const
+{
+    QList<int> rows;
+    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
+    QModelIndexList::const_iterator itri;
+    for(itri = items.begin(); itri != items.end(); ++itri) rows << (*itri).row();
+    return rows;
 }
 
 void MainWindow::createReport()
@@ -1059,7 +1077,7 @@ void MainWindow::prepareSearchData(const QList<const MyField *> &fields,
 
 void MainWindow::on_Edit_button1_clicked()
 {
-    edit_records(globaltable);
+    edit_records(globaltable, false);
 }
 
 void MainWindow::on_Refresh_button1_clicked()
@@ -1074,7 +1092,7 @@ void MainWindow::on_Add_button1_clicked()
 
 void MainWindow::on_Delete_button1_clicked()
 {
-    remove_records(globaltable);
+    remove_records(globaltable, false);
 }
 
 void MainWindow::on_Filter_checked_button_clicked()
@@ -1140,7 +1158,7 @@ void MainWindow::searchBtMenuTriggered(QAction* action)
 void MainWindow::subtableRecordEdit()
 {
     if(globalsubtable->getCurrentRowIndex() == -1) return;
-    edit_records(globalsubtable);
+    edit_records(globalsubtable, true);
     subtablewidget->show();
 }
 
@@ -1153,7 +1171,8 @@ void MainWindow::subtableRecordAdd()
 void MainWindow::subtableRecordRemove()
 {
     if(globalsubtable->getCurrentRowIndex() == -1) return;
-    remove_records(globalsubtable);
+    remove_records(globalsubtable, true);
+    subtablewidget->show();
 }
 
 void MainWindow::subtableRowSelected(int row)

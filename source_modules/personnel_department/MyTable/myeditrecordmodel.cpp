@@ -43,7 +43,7 @@ QVariant EditRecordModel::data(const QModelIndex &index, int role) const
      * - в userrole+2 передавать текст sql запроса, если поле - внешний ключ
      * - в userrole+3 передать список альтернативных имен для полей таблицы
      *   получаемой из sql запроса (из userrole+2)
-     * - в userrole+4 передать имя поля, замещающего текущее
+     * - в userrole+4 передать имя поля, замещающего текущее !!! (альтернативное поле)
     */
 
     QString realtype = recorddata->realTypeOfField(index.row() );

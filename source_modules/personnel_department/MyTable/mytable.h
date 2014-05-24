@@ -15,6 +15,9 @@ public:
     QString name;                                                               /// имя ссылки
     QString key0_1;                                                             /// ключ связывающий t0 и t1 (родитель t0)
     QString key1_0;                                                             /// ключ связывающий t1 и t0 (родитель t1)
+
+    QString alterfield; // поле, значение которого отображается вместо текущего
+
     MyTable *table_1;                                                           /// ссылающаяся таблица
     QString selectquerytext;                                                    /// текст запроса данных из таблицы t1
 };
@@ -27,7 +30,8 @@ public:
     void appendField(const QString& field, const QString& table,
                      bool editable = true, bool visible = true);
     bool appendLink(const QString& name,   const QString& key0_1,
-                    const QString& key1_0, MyTable *table_1);
+                    const QString& key1_0, const QString& alterfield,
+                    MyTable *table_1);
 
     bool initializeTable();
     bool setUpdateDataFields();                                                 /// применить изменение данных в editablerecord
@@ -38,7 +42,7 @@ public:
     bool updateData();                                                          /// запросить данные
 
     bool setUpdateGroupOfRecords(const QList<int> &records);                    /// внести изменения нескольких полей в группу записей (данные беруться из editablerecord)
-    bool setUpdateGroupOfRecords(const QList<int> &records,                     /// внести изменения нескольких полей в группу записей
+    bool setUpdateGroupOfRecords(QList<int> records,                     /// внести изменения нескольких полей в группу записей
                                  const QList<QPair<QString, QString> > &field_value_list);
 
 /// методы display... работают с полями из списка fieldforviewer (необходимы для привязки к модели данных)
@@ -84,6 +88,9 @@ public:
     QSqlQuery  getTableQueryData() const;
     QList<int> fieldsIndexOfColumns(const QList<int> &columns) const;
 
+    void appendAutoValue(const QString& attribute, const QVariant& autovalue);
+    void clearAutoValues();
+
 private:
     int  fieldRealIndexOf(QString field) const;                                 /// получить реальный индекс поля по имени
     int  fieldRealIndexOf(int col) const;
@@ -116,5 +123,11 @@ private:
     QString        mainselecttext;                                              /// основной SELECT запроса, сформированный при инициализации таблицы
     bool init;                                                                  /// признак инициализированной таблицы
     bool filtered;
+/*
+ * auto_values - автоматически подстанавливаемое значение
+ * при обновлении или вставке строки, требуется пара: атрибут=значение,
+ * auto_values - пара, которая автоматически подстанавливается в такие запросы
+*/
+    QMap<QString, QVariant> auto_values;
 };
 #endif // MYTABLE_H

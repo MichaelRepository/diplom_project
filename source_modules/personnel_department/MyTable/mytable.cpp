@@ -52,7 +52,7 @@ void MyTable::appendField(const QString &field, const QString &table,
 }
 
 bool MyTable::appendLink(const QString &name,   const QString &key0_1,
-                         const QString &key1_0, MyTable *table_1)
+                         const QString &key1_0, const QString &alterfield, MyTable *table_1)
 {
     if(!this   ->contains(key0_1)) return false;
     if(!table_1->contains(key1_0)) return false;
@@ -62,6 +62,7 @@ bool MyTable::appendLink(const QString &name,   const QString &key0_1,
     newlink.key0_1  = key0_1;
     newlink.key1_0  = key1_0;
     newlink.table_1 = table_1;
+    newlink.alterfield = alterfield;
 
     links.append(newlink);
     return true;
@@ -155,7 +156,7 @@ bool MyTable::setUpdateGroupOfRecords(const QList<int> &records)
     return setUpdateGroupOfRecords(records, fieldvalues);
 }
 
-bool MyTable::setUpdateGroupOfRecords(const QList<int> &records,
+bool MyTable::setUpdateGroupOfRecords(QList<int> records,
                                       const QList<QPair<QString, QString> > &field_value_list)
 {
     if(!init || records.size() > tablequery.size() ) return false;
@@ -182,13 +183,19 @@ bool MyTable::setUpdateGroupOfRecords(const QList<int> &records,
             whereitems.insert (field->table->name, QStringList() );
             primarylist.insert(field->table->name, field->table->primarykey);
         }
-        valueslist[field->table->name].append(field->table->name+"."+
-                                              (*itr).first+" = "+(*itr).second);
+        // отобрать только не пустые поля!!!
+        if(!(*itr).second.isNull() && !(*itr).second.isEmpty() )
+            valueslist[field->table->name].append(field->table->name+"."+
+                                              (*itr).first+" = "+"'"+(*itr).second+"'");
     }
 
+    qDebug() << tablequery.seek(1);
+    qDebug() << tablequery.seek(0);
+
     QList<int>::const_iterator itrr;
-    for(itrr = records.begin(); itrr != records.end(); itrr++)
+    for(itrr = records.begin(); itrr != records.end(); ++itrr)
     {
+        qDebug() << (*itrr);
         if(!tablequery.seek((*itrr) ) ) return false;
         QStringList::const_iterator itrt;
         for(itrt = tables.begin(); itrt != tables.end(); ++itrt)
@@ -208,6 +215,7 @@ bool MyTable::setUpdateGroupOfRecords(const QList<int> &records,
         QString querytext = "UPDATE "+(*itrt1)+" SET "+
                             valueslist[(*itrt1)].join(", ")+" WHERE "+
                             whereitems[(*itrt1)].join(" OR ");
+        qDebug() << querytext << "\n";
         query.prepare(querytext);
         if(!query.exec())
         {
@@ -314,6 +322,17 @@ bool MyTable::setInsertDataFields()
         QString querytext = "INSERT INTO "+(*itrt1)->name;
         QStringList fieldssection;
         QStringList valuessection;
+
+        /// если есть автоподставляемые значения, добавить их
+        if(auto_values.size() > 0)
+        {
+            QMap<QString, QVariant>::const_iterator itr_av;
+            for(itr_av = auto_values.begin(); itr_av != auto_values.end(); ++itr_av)
+            {
+                fieldssection.append( itr_av.key() );
+                valuessection.append( "'" + itr_av.value().toString() + "' " );
+            }
+        }
 
         const QList<MyField*>* tablefields = &((*itrt1)->fields);
 
@@ -478,7 +497,7 @@ MySqlRecord *MyTable::getEmptyRecordForInsert()
         if((*itr).isEditable)
         {
             editablerecord.append(&(*itr));
-            editablerecord.setValue(index, record.value((*itr).name) );
+            editablerecord.setValue(index, QVariant()/*record.value((*itr).name)*/ );
             ++index;
         }
     }
@@ -572,6 +591,17 @@ QList<int> MyTable::fieldsIndexOfColumns(const QList<int> &columns) const
         resultlist << index;
     }
     return resultlist;
+}
+
+void MyTable::appendAutoValue(const QString &attribute, const QVariant &autovalue)
+{
+    if(auto_values.contains(attribute) ) auto_values[attribute] = autovalue;
+    else auto_values.insert(attribute,autovalue);
+}
+
+void MyTable::clearAutoValues()
+{
+    auto_values.clear();
 }
 
 bool MyTable::contains(const QString &field) const

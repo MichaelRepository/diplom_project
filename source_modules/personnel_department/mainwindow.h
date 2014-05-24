@@ -104,8 +104,8 @@ private slots:
 private:
     void initTables();
     void add_new_record (MyTable *table);                                       /// добавить новую запись
-    void remove_records (MyTable *table);                                       /// удалить записи
-    void edit_records   (MyTable *table);                                       /// изменить запись
+    void remove_records (MyTable *table, bool assubtable);                                       /// удалить записи
+    void edit_records   (MyTable *table, bool assubtable);                                       /// изменить запись
     bool refresh_table  (MyTable *table);
 
     void getReportTemplatesTable();                                             /// запросить данне с шаблонов для текущего пользователя
@@ -113,6 +113,8 @@ private:
     void exportInDoc();
     void templatSelected(const QModelIndex &current,
                          const QModelIndex &previous);
+
+    QList<int> selectedRows() const;
 
     void createFilterForSelectedRecords();
     void createFilterForUnSelectedRecords();

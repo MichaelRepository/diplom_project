@@ -89,6 +89,22 @@ int SubTableWidget::getSelectedRowIndex()
     return ui->tableView->selectionModel()->selectedRows(0).first().row();
 }
 
+QList<int> SubTableWidget::selectedRows() const
+{
+    QList<int> rows;
+    QModelIndexList items = ui->tableView->selectionModel()->selectedRows(0);
+    QModelIndexList::const_iterator itri;
+    for(itri = items.begin(); itri != items.end(); ++itri) rows << (*itri).row();
+    return rows;
+}
+
+void SubTableWidget::show()
+{
+    ui->tableView->resizeColumnsToContents();
+    ui->tableView->resizeRowsToContents();
+    QWidget::show();
+}
+
 void SubTableWidget::on_tableView_clicked(const QModelIndex &index)
 {
     emit newrowselected(index.row() );                                          /// сообщить - новая строка выделена

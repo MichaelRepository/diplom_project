@@ -44,11 +44,16 @@ public:
     void setRow(int row);
     int  getSelectedRowIndex();
 
+    QList<int> selectedRows() const;                                            /// вернуть список выделенных строк
+
 signals:
     void newrowselected(int);
     void editButtonClicked();
     void removeButtonClicked();
     void addButtonClicked();
+
+public slots:
+    void show();
 
 private slots:
     void on_tableView_clicked(const QModelIndex &index);
